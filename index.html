@@ -1,1 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wechselbild Generator</title>
 
+<style>
+body{
+font-family:Arial;
+padding:20px;
+max-width:900px;
+margin:auto;
+}
+
+input{
+margin:10px 0;
+}
+
+canvas{
+max-width:100%;
+border:1px solid #ccc;
+margin-top:20px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>Wechselbild Generator</h1>
+
+<p>Bild A:</p>
+<input type="file" id="imgA">
+
+<p>Bild B:</p>
+<input type="file" id="imgB">
+
+<p>Anzahl Streifen:</p>
+<input type="number" id="stripes" value="24">
+
+<p>Breite:</p>
+<input type="number" id="width" value="2100">
+
+<p>Höhe:</p>
+<input type="number" id="height" value="900">
+
+<br><br>
+
+<button onclick="generate()">
+Bild erzeugen
+</button>
+
+<br><br>
+
+<a id="download" style="display:none">
+Download
+</a>
+
+<canvas id="canvas"></canvas>
+
+<script>
+
+function loadImage(file){
+return new Promise(resolve=>{
+const img=new Image();
+
+img.onload=()=>resolve(img);
+
+img.src=URL.createObjectURL(file);
+});
+}
+
+async function generate(){
+
+const fileA=
+document.getElementById("imgA").files[0];
+
+const fileB=
+document.getElementById("imgB").files[0];
+
+if(!fileA || !fileB){
+alert("Bitte beide Bilder auswählen");
+return;
+}
+
+const imgA=await loadImage(fileA);
+const imgB=await loadImage(fileB);
+
+const stripes=
+parseInt(
+document.getElementById("stripes").value
+);
+
+const width=
+parseInt(
+document.getElementById("width").value
+);
+
+const height=
+parseInt(
+document.getElementById("height").value
+);
+
+const canvas=
+document.getElementById("canvas");
+
+canvas.width=width*2;
+canvas.height=height;
+
+const ctx=
+canvas.getContext("2d");
+
+const stripeWidth=
+width/stripes;
+
+for(let i=0;i<stripes;i++){
+
+const sx=i*imgA.width/stripes;
+
+const sw=imgA.width/stripes;
+
+ctx.drawImage(
+imgA,
+sx,
+0,
+sw,
+imgA.height,
+i*2*stripeWidth,
+0,
+stripeWidth,
+height
+);
+
+ctx.drawImage(
+imgB,
+sx,
+0,
+sw,
+imgB.height,
+(i*2+1)*stripeWidth,
+0,
+stripeWidth,
+height
+);
+}
+
+const link=
+document.getElementById("download");
+
+link.href=
+canvas.toDataURL("image/jpeg",1);
+
+link.download=
+"wechselbild.jpg";
+
+link.style.display="inline";
+
+link.innerText=
+"Bild herunterladen";
+}
+
+</script>
+
+</body>
+</html>
