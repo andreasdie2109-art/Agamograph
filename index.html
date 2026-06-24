@@ -113,6 +113,121 @@ button{
 
 <canvas id="canvas"></canvas>
 
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wechselbild App Lite</title>
+
+<style>
+body{
+    font-family:Arial,sans-serif;
+    max-width:1000px;
+    margin:auto;
+    padding:20px;
+}
+label{
+    display:block;
+    margin-top:10px;
+}
+canvas{
+    max-width:100%;
+    border:1px solid #ccc;
+    margin-top:20px;
+}
+button{
+    margin-top:15px;
+    padding:10px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>Wechselbild App Lite</h1>
+
+<label>Bild A
+<input type="file" id="imgA" accept="image/*">
+</label>
+
+<label>Bild B
+<input type="file" id="imgB" accept="image/*">
+</label>
+
+<label>Optional Bild C
+<input type="file" id="imgC" accept="image/*">
+</label>
+
+<hr>
+
+<label>Format
+<select id="preset">
+<option value="custom">Benutzerdefiniert</option>
+<option value="21:9">21:9</option>
+<option value="16:9">16:9</option>
+<option value="4:3">4:3</option>
+<option value="3:2">3:2</option>
+<option value="1:1">1:1</option>
+</select>
+</label>
+
+<label>Breite (mm)
+<input type="number" id="widthMM" value="210">
+</label>
+
+<label>Höhe (mm)
+<input type="number" id="heightMM" value="90">
+</label>
+
+<label>DPI
+<select id="dpi">
+<option>150</option>
+<option selected>300</option>
+<option>600</option>
+</select>
+</label>
+
+<hr>
+
+<label>Modus
+<select id="mode">
+<option value="count">Anzahl Streifen</option>
+<option value="width">Streifenbreite (mm)</option>
+</select>
+</label>
+
+<label>Anzahl Streifen
+<input type="number" id="stripCount" value="24">
+</label>
+
+<label>Streifenbreite (mm)
+<input type="number" id="stripWidthMM" value="1" step="0.1">
+</label>
+
+<label>Ausrichtung
+<select id="orientation">
+<option value="vertical">Vertikal</option>
+<option value="horizontal">Horizontal</option>
+</select>
+</label>
+
+<hr>
+
+<label>Export
+<select id="exportType">
+<option value="image/jpeg">JPG</option>
+<option value="image/png">PNG</option>
+</select>
+</label>
+
+<button onclick="generate()">Vorschau erzeugen</button>
+<button onclick="downloadImage()">Bild herunterladen</button>
+
+<div id="info"></div>
+
+<canvas id="canvas"></canvas>
+
 <script>
 
 function mmToPx(mm,dpi){
@@ -289,6 +404,9 @@ function downloadImage(){
 }
 
 </script>
+
+</body>
+</html>
 
 </body>
 </html>
