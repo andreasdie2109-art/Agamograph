@@ -262,6 +262,8 @@ button{
     </div>
 </div>
 
+<canvas id="filterCanvas" style="display:none;"></canvas>
+
 <script>
 let loadedImages = { imgA: null, imgB: null, imgC: null };
 let isSimulating = false;
@@ -305,7 +307,6 @@ function cropInfo(img, targetW, targetH, percentOffsetX, percentOffsetY) {
     return { sx, sy, sw, sh };
 }
 
-// Erstellt den CSS-Filter-String basierend auf den Schiebereglern
 function getFilterString(prefix) {
     const b = document.getElementById(`bright${prefix}`).value;
     const c = document.getElementById(`contrast${prefix}`).value;
@@ -313,10 +314,24 @@ function getFilterString(prefix) {
     const bw = document.getElementById(`bw${prefix}`).checked;
     
     let filter = `brightness(${b}%) contrast(${c}%) saturate(${s}%)`;
-    if (bw) {
-        filter += " grayscale(100%)";
-    }
+    if (bw) filter += " grayscale(100%)";
     return filter;
+}
+
+// NEU: Zeichnet das Quellbild mit stabilen CSS-Filtern auf ein Hilfscanvas
+function drawImageWithFilter(ctx, img, sx, sy, sw, sh, dx, dy, dw, dh, filterStr) {
+    const fCanvas = document.getElementById("filterCanvas");
+    const fCtx = fCanvas.getContext("2d");
+    
+    fCanvas.width = sw;
+    fCanvas.height = sh;
+    
+    fCtx.clearRect(0, 0, sw, sh);
+    fCtx.filter = filterStr; // Filter auf Hilfscanvas anwenden
+    fCtx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+    
+    // Das gefilterte Bild auf das Hauptcanvas übertragen
+    ctx.drawImage(fCanvas, 0, 0, sw, sh, dx, dy, dw, dh);
 }
 
 async function triggerUpdate() {
@@ -415,20 +430,16 @@ function generate() {
         
         const c = cropInfo(img, width, height, off.x, off.y);
 
-        // Filter auf den Canvas-Kontext anwenden, bevor gezeichnet wird
-        ctx.filter = filters[imgIndex];
-
         if (orientation === "vertical") {
             const sw = c.sw / strips;
             const dw = width / strips;
-            ctx.drawImage(img, c.sx + i * sw, c.sy, sw, c.sh, i * dw, 0, dw, height);
+            drawImageWithFilter(ctx, img, c.sx + i * sw, c.sy, sw, c.sh, i * dw, 0, dw, height, filters[imgIndex]);
         } else {
             const sh = c.sh / strips;
             const dh = height / strips;
-            ctx.drawImage(img, c.sx, c.sy + i * sh, c.sw, sh, 0, i * dh, width, dh);
+            drawImageWithFilter(ctx, img, c.sx, c.sy + i * sh, c.sw, sh, 0, i * dh, width, dh, filters[imgIndex]);
         }
     }
-    ctx.filter = "none"; // Filter zurücksetzen
 
     infoDiv.innerHTML = `<strong>Druckbild bereit!</strong><br>Pixelgröße: ${width} × ${height} px<br>Streifen: ${strips}`;
 }
@@ -477,20 +488,17 @@ function simulateView() {
     if (loadedImages.imgB) { offsets.push({x: parseFloat(offsetXB.value), y: parseFloat(offsetYB.value)}); filters.push(getFilterString("B")); }
     if (loadedImages.imgC) { offsets.push({x: parseFloat(offsetXC.value), y: parseFloat(offsetYC.value)}); filters.push(getFilterString("C")); }
 
-    // Bild A zeichnen mit Filter
+    // Bild A im Simulator
     ctx.globalAlpha = 1 - weight;
-    ctx.filter = filters[imgIndexA];
     const cA = cropInfo(imgs[imgIndexA], width, height, offsets[imgIndexA].x, offsets[imgIndexA].y);
-    ctx.drawImage(imgs[imgIndexA], cA.sx, cA.sy, cA.sw, cA.sh, 0, 0, width, height);
+    drawImageWithFilter(ctx, imgs[imgIndexA], cA.sx, cA.sy, cA.sw, cA.sh, 0, 0, width, height, filters[imgIndexA]);
 
-    // Bild B zeichnen mit Filter
+    // Bild B im Simulator
     ctx.globalAlpha = weight;
-    ctx.filter = filters[imgIndexB];
     const cB = cropInfo(imgs[imgIndexB], width, height, offsets[imgIndexB].x, offsets[imgIndexB].y);
-    ctx.drawImage(imgs[imgIndexB], cB.sx, cB.sy, cB.sw, cB.sh, 0, 0, width, height);
+    drawImageWithFilter(ctx, imgs[imgIndexB], cB.sx, cB.sy, cB.sw, cB.sh, 0, 0, width, height, filters[imgIndexB]);
 
     ctx.globalAlpha = 1.0; 
-    ctx.filter = "none"; // Zurücksetzen
     
     document.getElementById("info").innerHTML = "<em>Vorschau-Simulation aktiv (Inklusive Filtereffekte)</em>";
 }
