@@ -69,14 +69,25 @@ canvas{
 button{
     margin-top:15px;
     padding:10px 20px;
-    background-color: #007bff;
-    color: white;
     border: none;
     border-radius: 4px;
     cursor: pointer;
     font-size: 16px;
+    font-weight: bold;
+    margin-right: 10px;
 }
-button:hover {
+.btn-primary {
+    background-color: #28a745;
+    color: white;
+}
+.btn-primary:hover {
+    background-color: #218838;
+}
+.btn-secondary {
+    background-color: #007bff;
+    color: white;
+}
+.btn-secondary:hover {
     background-color: #0056b3;
 }
 #info {
@@ -181,7 +192,7 @@ button:hover {
             <option value="image/png">PNG</option>
         </select>
 
-        <button onclick="downloadImage()">Druckbild herunterladen</button>
+        <button class="btn-primary" onclick="downloadImage()">Druckbild herunterladen</button>
     </div>
 
     <div class="preview-panel">
@@ -190,8 +201,9 @@ button:hover {
         
         <div class="simulator-box">
             <strong>👀 Interaktiver Blickwinkel-Simulator</strong>
-            <p style="font-size: 13px; margin: 5px 0;">Bewege den Regler, um den Kipp-Effekt zu testen (Links -> Mitte -> Rechts):</p>
+            <p style="font-size: 13px; margin: 5px 0;">Bewege den Regler, um den Kipp-Effekt zu testen. Klicke auf den blauen Button, um das Streifenmuster wieder anzuzeigen.</p>
             <input type="range" id="viewSlider" min="0" max="100" value="50" style="max-width:100%;" oninput="simulateView()">
+            <button class="btn-secondary" onclick="resetToStrips()">Druck-Streifenmuster anzeigen</button>
         </div>
 
         <canvas id="canvas"></canvas>
@@ -199,8 +211,8 @@ button:hover {
 </div>
 
 <script>
-// Globale Zwischenspeicherung der geladenen Bilder
 let loadedImages = { imgA: null, imgB: null, imgC: null };
+let isSimulating = false; // Flag, um zu wissen, ob wir gerade im Simulator-Modus sind
 
 function mmToPx(mm, dpi) {
     return Math.round(mm * dpi / 25.4);
@@ -220,7 +232,6 @@ function loadImage(file) {
     });
 }
 
-// KORREKTUR/ERWEITERUNG: Berechnet Crop inklusive manuellem Schieberegler-Versatz
 function cropInfo(img, targetW, targetH, percentOffsetX, percentOffsetY) {
     const srcRatio = img.width / img.height;
     const dstRatio = targetW / targetH;
@@ -230,13 +241,11 @@ function cropInfo(img, targetW, targetH, percentOffsetX, percentOffsetY) {
     if (srcRatio > dstRatio) {
         sw = img.height * dstRatio;
         sx = (img.width - sw) / 2;
-        // Manueller Versatz auf der X-Achse (begrenzt auf den maximalen Bildbereich)
         const maxShiftX = (img.width - sw) / 2;
         sx += maxShiftX * (percentOffsetX / 100);
     } else {
         sh = img.width / dstRatio;
         sy = (img.height - sh) / 2;
-        // Manueller Versatz auf der Y-Achse
         const maxShiftY = (img.height - sh) / 2;
         sy += maxShiftY * (percentOffsetY / 100);
     }
@@ -244,7 +253,6 @@ function cropInfo(img, targetW, targetH, percentOffsetX, percentOffsetY) {
     return { sx, sy, sw, sh };
 }
 
-// Lädt geänderte Bilder in den Speicher und stößt Generierung an
 async function triggerUpdate() {
     const inputA = document.getElementById("imgA").files[0];
     const inputB = document.getElementById("imgB").files[0];
@@ -268,6 +276,18 @@ async function triggerUpdate() {
         return;
     }
 
+    // Wenn Einstellungen geändert werden, beenden wir die Simulation und zeigen das Streifenmuster
+    if (!isSimulating) {
+        generate();
+    } else {
+        simulateView();
+    }
+}
+
+// Setzt den Simulator zurück und generiert das echte Streifenmuster
+function resetToStrips() {
+    isSimulating = false;
+    document.getElementById("viewSlider").value = 50;
     generate();
 }
 
@@ -341,16 +361,12 @@ function generate() {
     }
 
     infoDiv.innerHTML = `<strong>Druckbild bereit!</strong><br>Pixelgröße: ${width} × ${height} px<br>Streifen: ${strips}`;
-    
-    // Nach dem Generieren des Druckbilds den Simulator zurücksetzen/updaten
-    simulateView();
 }
 
-// FEATURE 2: Der Echtzeit-Blickwinkel-Simulator
 function simulateView() {
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
-    const sliderVal = document.getElementById("viewSlider").value / 100; // 0 bis 1
+    const sliderVal = document.getElementById("viewSlider").value / 100;
     
     const imgs = [];
     if (loadedImages.imgA) imgs.push(loadedImages.imgA);
@@ -359,29 +375,22 @@ function simulateView() {
 
     if (imgs.length < 2) return;
 
-    // Wenn der Regler bewegt wird, zeichnen wir temporär die reine Ansichts-Simulation
-    // (Wird beim Klick auf "Generieren" oder Ändern der Werte wieder zum Druckraster)
-    if (sliderVal === 0.5 && document.activeElement?.id !== "viewSlider") {
-        // Falls der Slider genau in der Mitte steht und nicht aktiv gezogen wird, belassen wir das Druckraster
-        return; 
-    }
+    // Sobald der Slider bewegt wird, aktivieren wir den Simulationsmodus
+    isSimulating = true;
 
     const width = canvas.width;
     const height = canvas.height;
     ctx.clearRect(0, 0, width, height);
 
-    // Berechnen, wie stark welches Bild je nach Slider-Position sichtbar ist
     let imgIndexA = 0;
     let imgIndexB = 1;
     let weight = 0;
 
     if (imgs.length === 2) {
-        // Bei 2 Bildern blendet der Regler von Bild A (0) zu Bild B (1)
         imgIndexA = 0;
         imgIndexB = 1;
         weight = sliderVal;
     } else if (imgs.length === 3) {
-        // Bei 3 Bildern: 0.0 -> Bild A, 0.5 -> Bild B, 1.0 -> Bild C
         if (sliderVal < 0.5) {
             imgIndexA = 0;
             imgIndexB = 1;
@@ -393,7 +402,6 @@ function simulateView() {
         }
     }
 
-    // Beide beteiligten Bilder mit Transparenz übereinanderlegen (Überblendung simuliert den Kippeffekt)
     const offsets = [];
     if (loadedImages.imgA) offsets.push({x: parseFloat(offsetXA.value), y: parseFloat(offsetYA.value)});
     if (loadedImages.imgB) offsets.push({x: parseFloat(offsetXB.value), y: parseFloat(offsetYB.value)});
@@ -409,12 +417,13 @@ function simulateView() {
     const cB = cropInfo(imgs[imgIndexB], width, height, offsets[imgIndexB].x, offsets[imgIndexB].y);
     ctx.drawImage(imgs[imgIndexB], cB.sx, cB.sy, cB.sw, cB.sh, 0, 0, width, height);
 
-    ctx.globalAlpha = 1.0; // Alpha zurücksetzen
+    ctx.globalAlpha = 1.0; 
+    
+    document.getElementById("info").innerHTML = "<em>Vorschau-Simulation aktiv (Nicht das Drucklayout!)</em>";
 }
 
-// Wichtig für den Download: Vor dem Speichern immer kurz das echte Streifen-Druckraster neu erzeugen
 function downloadImage() {
-    generate(); // Erzwingt das Drucklayout auf dem Canvas
+    resetToStrips(); // Erzwingt vor dem Download das echte Streifen-Layout und setzt den Slider zurück
     const canvas = document.getElementById("canvas");
     const type = document.getElementById("exportType").value;
     const a = document.createElement("a");
