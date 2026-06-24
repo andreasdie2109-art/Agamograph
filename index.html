@@ -1,4 +1,4 @@
-<!DOCTYPE hhtml>
+<!DOCTYPE html>
 <html lang="de">
 <head>
 <meta charset="UTF-8">
@@ -11,19 +11,47 @@ body{
     max-width:1000px;
     margin:auto;
     padding:20px;
+    background: #f9f9f9;
 }
 label{
     display:block;
     margin-top:10px;
+    font-weight: bold;
+}
+input, select {
+    display: block;
+    width: 100%;
+    max-width: 300px;
+    padding: 8px;
+    margin-top: 5px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
 }
 canvas{
     max-width:100%;
-    border:1px solid #ccc;
+    border:2px dashed #bbb;
     margin-top:20px;
+    background: #fff;
 }
 button{
     margin-top:15px;
-    padding:10px;
+    padding:10px 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+button:hover {
+    background-color: #0056b3;
+}
+#info {
+    margin-top: 15px;
+    padding: 10px;
+    background: #e9ecef;
+    border-left: 5px solid #007bff;
 }
 </style>
 </head>
@@ -50,7 +78,7 @@ button{
 <select id="preset">
 <option value="custom">Benutzerdefiniert</option>
 <option value="21:9">21:9</option>
-<option value="16:9">16:9</option>
+<option value="16:9" selected>16:9</option>
 <option value="4:3">4:3</option>
 <option value="3:2">3:2</option>
 <option value="1:1">1:1</option>
@@ -62,7 +90,7 @@ button{
 </label>
 
 <label>Höhe (mm)
-<input type="number" id="heightMM" value="90">
+<input type="number" id="heightMM" value="118">
 </label>
 
 <label>DPI
@@ -77,22 +105,22 @@ button{
 
 <label>Modus
 <select id="mode">
-<option value="count">Anzahl Streifen</option>
+<option value="count" selected>Anzahl Streifen</option>
 <option value="width">Streifenbreite (mm)</option>
 </select>
 </label>
 
 <label>Anzahl Streifen
-<input type="number" id="stripCount" value="24">
+<input type="number" id="stripCount" value="30">
 </label>
 
 <label>Streifenbreite (mm)
-<input type="number" id="stripWidthMM" value="1" step="0.1">
+<input type="number" id="stripWidthMM" value="2" step="0.1">
 </label>
 
 <label>Ausrichtung
 <select id="orientation">
-<option value="vertical">Vertikal</option>
+<option value="vertical" selected>Vertikal</option>
 <option value="horizontal">Horizontal</option>
 </select>
 </label>
@@ -109,7 +137,7 @@ button{
 <button onclick="generate()">Vorschau erzeugen</button>
 <button onclick="downloadImage()">Bild herunterladen</button>
 
-<div id="info"></div>
+<div id="info">Bitte Bilder auswählen und auf "Vorschau erzeugen" klicken.</div>
 
 <canvas id="canvas"></canvas>
 
@@ -119,14 +147,13 @@ function mmToPx(mm, dpi) {
     return Math.round(mm * dpi / 25.4);
 }
 
-// KORREKTUR: Lädt Bilder via FileReader, um CORS-Probleme lokal zu vermeiden
 function loadImage(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = function(event) {
             const img = new Image();
             img.onload = () => resolve(img);
-            img.onerror = () => reject(new Error("Bild konnte nicht geladen werden."));
+            img.onerror = () => reject(new Error("Bilddaten fehlerhaft."));
             img.src = event.target.result;
         };
         reader.onerror = () => reject(new Error("Datei konnte nicht gelesen werden."));
@@ -138,10 +165,7 @@ function cropInfo(img, targetW, targetH) {
     const srcRatio = img.width / img.height;
     const dstRatio = targetW / targetH;
 
-    let sx = 0;
-    let sy = 0;
-    let sw = img.width;
-    let sh = img.height;
+    let sx = 0, sy = 0, sw = img.width, sh = img.height;
 
     if (srcRatio > dstRatio) {
         sw = img.height * dstRatio;
@@ -155,6 +179,9 @@ function cropInfo(img, targetW, targetH) {
 }
 
 async function generate() {
+    const infoDiv = document.getElementById("info");
+    infoDiv.innerHTML = "Verarbeite Bilder... Bitte warten...";
+
     try {
         const files = [];
         const inputA = document.getElementById("imgA");
@@ -166,7 +193,8 @@ async function generate() {
         if (inputC.files[0]) files.push(inputC.files[0]);
 
         if (files.length < 2) {
-            alert("Bitte mindestens Bild A und Bild B auswählen.");
+            alert("Bitte wähle mindestens Bild A und Bild B aus!");
+            infoDiv.innerHTML = "<span style='color:red;'>Fehler: Zu wenige Bilder ausgewählt.</span>";
             return;
         }
 
@@ -175,7 +203,6 @@ async function generate() {
         let h = parseFloat(document.getElementById("heightMM").value);
 
         const preset = document.getElementById("preset").value;
-
         if (preset !== "custom") {
             const r = preset.split(":");
             h = w * parseFloat(r[1]) / parseFloat(r[0]);
@@ -186,20 +213,21 @@ async function generate() {
         const height = mmToPx(h, dpi);
 
         let strips;
+        const mode = document.getElementById("mode").value;
 
-        if (document.getElementById("mode").value === "count") {
+        if (mode === "count") {
             strips = parseInt(document.getElementById("stripCount").value);
         } else {
             const swmm = parseFloat(document.getElementById("stripWidthMM").value);
             const swpx = mmToPx(swmm, dpi);
-            strips = Math.floor(
-                (document.getElementById("orientation").value === "vertical" ? width : height) / swpx
-            );
+            const totalPx = (document.getElementById("orientation").value === "vertical") ? width : height;
+            strips = Math.floor(totalPx / swpx);
         }
 
-        if (isNaN(strips) || strips <= 0) {
-            alert("Ungültige Streifenanzahl.");
-            return;
+        // Sicherheitsprüfung: Falls strips 0 oder NaN ist, Standardwert setzen
+        if (!strips || strips <= 0) {
+            strips = 20; 
+            document.getElementById("stripCount").value = 20;
         }
 
         const imgs = [];
@@ -212,10 +240,9 @@ async function generate() {
         canvas.height = height;
 
         const ctx = canvas.getContext("2d");
-        const orientation = document.getElementById("orientation").value;
-
-        // Canvas leeren
         ctx.clearRect(0, 0, width, height);
+        
+        const orientation = document.getElementById("orientation").value;
 
         for (let i = 0; i < strips; i++) {
             const img = imgs[i % imgs.length];
@@ -224,41 +251,19 @@ async function generate() {
             if (orientation === "vertical") {
                 const sw = c.sw / strips;
                 const dw = width / strips;
-
-                ctx.drawImage(
-                    img,
-                    c.sx + i * sw,
-                    c.sy,
-                    sw,
-                    c.sh,
-                    i * dw,
-                    0,
-                    dw,
-                    height
-                );
+                ctx.drawImage(img, c.sx + i * sw, c.sy, sw, c.sh, i * dw, 0, dw, height);
             } else {
                 const sh = c.sh / strips;
                 const dh = height / strips;
-
-                ctx.drawImage(
-                    img,
-                    c.sx,
-                    c.sy + i * sh,
-                    c.sw,
-                    sh,
-                    0,
-                    i * dh,
-                    width,
-                    dh
-                );
+                ctx.drawImage(img, c.sx, c.sy + i * sh, c.sw, sh, 0, i * dh, width, dh);
             }
         }
 
-        document.getElementById("info").innerHTML =
-            "<p><b>Pixel:</b> " + width + " × " + height + "<br><b>Streifen:</b> " + strips + "</p>";
+        infoDiv.innerHTML = `<strong>Vorschau erfolgreich geladen!</strong><br>Pixelgröße: ${width} × ${height} px<br>Berechnete Streifen: ${strips}`;
 
     } catch (error) {
-        alert("Fehler bei der Verarbeitung: " + error.message);
+        alert("Fehler: " + error.message);
+        infoDiv.innerHTML = "<span style='color:red;'>Fehler bei der Berechnung.</span>";
     }
 }
 
@@ -266,12 +271,10 @@ function downloadImage() {
     const canvas = document.getElementById("canvas");
     const type = document.getElementById("exportType").value;
     const a = document.createElement("a");
-
     a.href = canvas.toDataURL(type, 0.95);
     a.download = type === "image/png" ? "wechselbild.png" : "wechselbild.jpg";
     a.click();
 }
-
 </script>
 
 </body>
