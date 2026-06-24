@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Wechselbild App Pro Plus</title>
+<title>Wechselbild App Pro</title>
 
 <style>
 body{
     font-family:Arial,sans-serif;
-    max-width:1200px;
+    max-width:1100px;
     margin:auto;
     padding:20px;
     background: #f9f9f9;
@@ -20,7 +20,7 @@ body{
 }
 .panel {
     flex: 1;
-    min-width: 320px;
+    min-width: 300px;
 }
 .preview-panel {
     flex: 1.5;
@@ -45,37 +45,19 @@ input, select {
     border: 1px solid #ccc;
     border-radius: 4px;
 }
-.control-block {
+.offset-controls {
     background: #f0f0f0;
-    padding: 12px;
+    padding: 10px;
     margin-bottom: 15px;
     border-radius: 4px;
     max-width: 300px;
-    border-left: 4px solid #6c757d;
 }
-.control-block-A { border-left-color: #ffc107; }
-.control-block-B { border-left-color: #17a2b8; }
-.control-block-C { border-left-color: #28a745; }
-
-.control-block label {
-    font-size: 11px;
-    margin-top: 4px;
-    font-weight: normal;
+.offset-controls label {
+    font-size: 12px;
+    margin-top: 5px;
 }
-.control-block input {
-    margin-bottom: 4px;
-}
-.checkbox-label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 11px !important;
-    font-weight: normal !important;
-    cursor: pointer;
-}
-.checkbox-label input {
-    width: auto;
-    margin: 0;
+.offset-controls input {
+    margin-bottom: 5px;
 }
 canvas{
     max-width:100%;
@@ -126,69 +108,35 @@ button{
 
 <body>
 
-<h1>Wechselbild App Pro Plus (mit Pixel-Genauen Filtern)</h1>
+<h1>Wechselbild App Pro (mit Versatz & Simulator)</h1>
 
 <div class="container">
     <div class="panel">
-        
-        <div class="control-block control-block-A">
-            <label style="font-weight:bold; font-size:14px;">Bild A</label>
-            <input type="file" id="imgA" accept="image/*" onchange="triggerUpdate()">
-            
-            <label>Horizontaler / Vertikaler Versatz</label>
+        <label>Bild A</label>
+        <input type="file" id="imgA" accept="image/*" onchange="triggerUpdate()">
+        <div class="offset-controls">
+            <label>Bild A: Horizontaler Versatz</label>
             <input type="range" id="offsetXA" min="-100" max="100" value="0" oninput="triggerUpdate()">
+            <label>Bild A: Vertikaler Versatz</label>
             <input type="range" id="offsetYA" min="-100" max="100" value="0" oninput="triggerUpdate()">
-            
-            <label>Helligkeit / Kontrast</label>
-            <input type="range" id="brightA" min="50" max="150" value="100" oninput="triggerUpdate()">
-            <input type="range" id="contrastA" min="50" max="150" value="100" oninput="triggerUpdate()">
-            
-            <label>Sättigung</label>
-            <input type="range" id="saturateA" min="0" max="200" value="100" oninput="triggerUpdate()">
-            
-            <label class="checkbox-label">
-                <input type="checkbox" id="bwA" onchange="triggerUpdate()"> Schwarz-Weiß (Monochrom)
-            </label>
         </div>
 
-        <div class="control-block control-block-B">
-            <label style="font-weight:bold; font-size:14px;">Bild B</label>
-            <input type="file" id="imgB" accept="image/*" onchange="triggerUpdate()">
-            
-            <label>Horizontaler / Vertikaler Versatz</label>
+        <label>Bild B</label>
+        <input type="file" id="imgB" accept="image/*" onchange="triggerUpdate()">
+        <div class="offset-controls">
+            <label>Bild B: Horizontaler Versatz</label>
             <input type="range" id="offsetXB" min="-100" max="100" value="0" oninput="triggerUpdate()">
+            <label>Bild B: Vertikaler Versatz</label>
             <input type="range" id="offsetYB" min="-100" max="100" value="0" oninput="triggerUpdate()">
-            
-            <label>Helligkeit / Kontrast</label>
-            <input type="range" id="brightB" min="50" max="150" value="100" oninput="triggerUpdate()">
-            <input type="range" id="contrastB" min="50" max="150" value="100" oninput="triggerUpdate()">
-            
-            <label>Sättigung</label>
-            <input type="range" id="saturateB" min="0" max="200" value="100" oninput="triggerUpdate()">
-            
-            <label class="checkbox-label">
-                <input type="checkbox" id="bwB" onchange="triggerUpdate()"> Schwarz-Weiß (Monochrom)
-            </label>
         </div>
 
-        <div class="control-block control-block-C">
-            <label style="font-weight:bold; font-size:14px;">Optional Bild C</label>
-            <input type="file" id="imgC" accept="image/*" onchange="triggerUpdate()">
-            
-            <label>Horizontaler / Vertikaler Versatz</label>
+        <label>Optional Bild C</label>
+        <input type="file" id="imgC" accept="image/*" onchange="triggerUpdate()">
+        <div class="offset-controls">
+            <label>Bild C: Horizontaler Versatz</label>
             <input type="range" id="offsetXC" min="-100" max="100" value="0" oninput="triggerUpdate()">
+            <label>Bild C: Vertikaler Versatz</label>
             <input type="range" id="offsetYC" min="-100" max="100" value="0" oninput="triggerUpdate()">
-            
-            <label>Helligkeit / Kontrast</label>
-            <input type="range" id="brightC" min="50" max="150" value="100" oninput="triggerUpdate()">
-            <input type="range" id="contrastC" min="50" max="150" value="100" oninput="triggerUpdate()">
-            
-            <label>Sättigung</label>
-            <input type="range" id="saturateC" min="0" max="200" value="100" oninput="triggerUpdate()">
-            
-            <label class="checkbox-label">
-                <input type="checkbox" id="bwC" onchange="triggerUpdate()"> Schwarz-Weiß (Monochrom)
-            </label>
         </div>
 
         <hr>
@@ -262,11 +210,9 @@ button{
     </div>
 </div>
 
-<canvas id="filterCanvas" style="display:none;"></canvas>
-
 <script>
 let loadedImages = { imgA: null, imgB: null, imgC: null };
-let isSimulating = false;
+let isSimulating = false; // Flag, um zu wissen, ob wir gerade im Simulator-Modus sind
 
 function mmToPx(mm, dpi) {
     return Math.round(mm * dpi / 25.4);
@@ -307,76 +253,6 @@ function cropInfo(img, targetW, targetH, percentOffsetX, percentOffsetY) {
     return { sx, sy, sw, sh };
 }
 
-// NEU & AUSFALLSICHER: Berechnet Filter mathematisch direkt auf Pixelebene (ImageData)
-function applyPixelFilters(ctx, width, height, prefix) {
-    const imgData = ctx.getImageData(0, 0, width, height);
-    const data = imgData.data;
-
-    const bright = parseFloat(document.getElementById(`bright${prefix}`).value) / 100;
-    const contrast = parseFloat(document.getElementById(`contrast${prefix}`).value) / 100;
-    const saturate = parseFloat(document.getElementById(`saturate${prefix}`).value) / 100;
-    const bw = document.getElementById(`bw${prefix}`).checked;
-
-    // Kontrast-Faktor berechnen
-    const factor = (259 * (contrast * 255 + 255)) / (255 * (259 - contrast * 255));
-
-    for (let i = 0; i < data.length; i += 4) {
-        let r = data[i];
-        let g = data[i + 1];
-        let b = data[i + 2];
-
-        // 1. Schwarz-Weiß (Grayscale)
-        if (bw) {
-            const gray = 0.299 * r + 0.587 * g + 0.114 * b;
-            r = g = b = gray;
-        }
-
-        // 2. Helligkeit
-        r *= bright;
-        g *= bright;
-        b *= bright;
-
-        // 3. Kontrast
-        r = factor * (r - 128) + 128;
-        g = factor * (g - 128) + 128;
-        b = factor * (b - 128) + 128;
-
-        // 4. Sättigung (nur wenn nicht s/w)
-        if (!bw && saturate !== 1) {
-            const gray = 0.299 * r + 0.587 * g + 0.114 * b;
-            r = gray + (r - gray) * saturate;
-            g = gray + (g - gray) * saturate;
-            b = gray + (b - gray) * saturate;
-        }
-
-        // Werte auf 0-255 begrenzen
-        data[i]     = Math.min(255, Math.max(0, r));
-        data[i + 1] = Math.min(255, Math.max(0, g));
-        data[i + 2] = Math.min(255, Math.max(0, b));
-    }
-
-    ctx.putImageData(imgData, 0, 0);
-}
-
-// Zeichnet den Ausschnitt eines Bildes temporär auf das Hilfscanvas, jagt die Filter drüber und clippt es auf das Zielcanvas
-function processAndDrawSlice(ctx, img, prefix, sx, sy, sw, sh, dx, dy, dw, dh) {
-    const fCanvas = document.getElementById("filterCanvas");
-    const fCtx = fCanvas.getContext("2d");
-
-    fCanvas.width = dw;
-    fCanvas.height = dh;
-    fCtx.clearRect(0, 0, dw, dh);
-
-    // Auf die exakte Streifen-Pixelgröße herunterskalieren
-    fCtx.drawImage(img, sx, sy, sw, sh, 0, 0, dw, dh);
-
-    // Filter direkt auf die Pixel anwenden
-    applyPixelFilters(fCtx, dw, dh, prefix);
-
-    // Resultat auf das Hauptcanvas übertragen
-    ctx.drawImage(fCanvas, 0, 0, dw, dh, dx, dy, dw, dh);
-}
-
 async function triggerUpdate() {
     const inputA = document.getElementById("imgA").files[0];
     const inputB = document.getElementById("imgB").files[0];
@@ -400,6 +276,7 @@ async function triggerUpdate() {
         return;
     }
 
+    // Wenn Einstellungen geändert werden, beenden wir die Simulation und zeigen das Streifenmuster
     if (!isSimulating) {
         generate();
     } else {
@@ -407,6 +284,7 @@ async function triggerUpdate() {
     }
 }
 
+// Setzt den Simulator zurück und generiert das echte Streifenmuster
 function resetToStrips() {
     isSimulating = false;
     document.getElementById("viewSlider").value = 50;
@@ -417,12 +295,10 @@ function generate() {
     const infoDiv = document.getElementById("info");
     
     const imgs = [];
-    const prefixes = [];
     const offsets = [];
-    
-    if (loadedImages.imgA) { imgs.push(loadedImages.imgA); prefixes.push("A"); offsets.push({x: parseFloat(offsetXA.value), y: parseFloat(offsetYA.value)}); }
-    if (loadedImages.imgB) { imgs.push(loadedImages.imgB); prefixes.push("B"); offsets.push({x: parseFloat(offsetXB.value), y: parseFloat(offsetYB.value)}); }
-    if (loadedImages.imgC) { imgs.push(loadedImages.imgC); prefixes.push("C"); offsets.push({x: parseFloat(offsetXC.value), y: parseFloat(offsetYC.value)}); }
+    if (loadedImages.imgA) { imgs.push(loadedImages.imgA); offsets.push({x: parseFloat(offsetXA.value), y: parseFloat(offsetYA.value)}); }
+    if (loadedImages.imgB) { imgs.push(loadedImages.imgB); offsets.push({x: parseFloat(offsetXB.value), y: parseFloat(offsetYB.value)}); }
+    if (loadedImages.imgC) { imgs.push(loadedImages.imgC); offsets.push({x: parseFloat(offsetXC.value), y: parseFloat(offsetYC.value)}); }
 
     if (imgs.length < 2) {
         infoDiv.innerHTML = "Bitte wähle mindestens Bild A und Bild B aus.";
@@ -469,7 +345,6 @@ function generate() {
     for (let i = 0; i < strips; i++) {
         const imgIndex = i % imgs.length;
         const img = imgs[imgIndex];
-        const prefix = prefixes[imgIndex];
         const off = offsets[imgIndex];
         
         const c = cropInfo(img, width, height, off.x, off.y);
@@ -477,11 +352,11 @@ function generate() {
         if (orientation === "vertical") {
             const sw = c.sw / strips;
             const dw = width / strips;
-            processAndDrawSlice(ctx, img, prefix, c.sx + i * sw, c.sy, sw, c.sh, i * dw, 0, dw, height);
+            ctx.drawImage(img, c.sx + i * sw, c.sy, sw, c.sh, i * dw, 0, dw, height);
         } else {
             const sh = c.sh / strips;
             const dh = height / strips;
-            processAndDrawSlice(ctx, img, prefix, c.sx, c.sy + i * sh, c.sw, sh, 0, i * dh, width, dh);
+            ctx.drawImage(img, c.sx, c.sy + i * sh, c.sw, sh, 0, i * dh, width, dh);
         }
     }
 
@@ -494,13 +369,13 @@ function simulateView() {
     const sliderVal = document.getElementById("viewSlider").value / 100;
     
     const imgs = [];
-    const prefixes = [];
-    if (loadedImages.imgA) { imgs.push(loadedImages.imgA); prefixes.push("A"); }
-    if (loadedImages.imgB) { imgs.push(loadedImages.imgB); prefixes.push("B"); }
-    if (loadedImages.imgC) { imgs.push(loadedImages.imgC); prefixes.push("C"); }
+    if (loadedImages.imgA) imgs.push(loadedImages.imgA);
+    if (loadedImages.imgB) imgs.push(loadedImages.imgB);
+    if (loadedImages.imgC) imgs.push(loadedImages.imgC);
 
     if (imgs.length < 2) return;
 
+    // Sobald der Slider bewegt wird, aktivieren wir den Simulationsmodus
     isSimulating = true;
 
     const width = canvas.width;
@@ -532,30 +407,23 @@ function simulateView() {
     if (loadedImages.imgB) offsets.push({x: parseFloat(offsetXB.value), y: parseFloat(offsetYB.value)});
     if (loadedImages.imgC) offsets.push({x: parseFloat(offsetXC.value), y: parseFloat(offsetYC.value)});
 
-    // Bild A im Simulator
+    // Bild A zeichnen
     ctx.globalAlpha = 1 - weight;
     const cA = cropInfo(imgs[imgIndexA], width, height, offsets[imgIndexA].x, offsets[imgIndexA].y);
-    processAndDrawSlice(ctx, imgs[imgIndexA], prefixes[imgIndexA], cA.sx, cA.sy, cA.sw, cA.sh, 0, 0, width, height);
+    ctx.drawImage(imgs[imgIndexA], cA.sx, cA.sy, cA.sw, cA.sh, 0, 0, width, height);
 
-    // Bild B im Simulator
+    // Bild B zeichnen
     ctx.globalAlpha = weight;
     const cB = cropInfo(imgs[imgIndexB], width, height, offsets[imgIndexB].x, offsets[imgIndexB].y);
-    
-    // Um unschöne Überlagerungstransparenzen zu verhindern, nutzen wir ein zweites Canvas für B
-    const fCanvas = document.getElementById("filterCanvas");
-    const fCtx = fCanvas.getContext("2d");
-    fCanvas.width = width; fCanvas.height = height;
-    processAndDrawSlice(fCtx, imgs[imgIndexB], prefixes[imgIndexB], cB.sx, cB.sy, cB.sw, cB.sh, 0, 0, width, height);
-    
-    ctx.drawImage(fCanvas, 0, 0);
+    ctx.drawImage(imgs[imgIndexB], cB.sx, cB.sy, cB.sw, cB.sh, 0, 0, width, height);
 
     ctx.globalAlpha = 1.0; 
     
-    document.getElementById("info").innerHTML = "<em>Vorschau-Simulation aktiv (Inklusive Pixel-Filtereffekte)</em>";
+    document.getElementById("info").innerHTML = "<em>Vorschau-Simulation aktiv (Nicht das Drucklayout!)</em>";
 }
 
 function downloadImage() {
-    resetToStrips();
+    resetToStrips(); // Erzwingt vor dem Download das echte Streifen-Layout und setzt den Slider zurück
     const canvas = document.getElementById("canvas");
     const type = document.getElementById("exportType").value;
     const a = document.createElement("a");
