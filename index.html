@@ -1,165 +1,136 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Wechselbild Generator</title>
-
-<style>
-body{
-font-family:Arial;
-padding:20px;
-max-width:900px;
-margin:auto;
+function mmToPx(mm, dpi) {
+    return Math.round(mm * dpi / 25.4);
 }
 
-input{
-margin:10px 0;
+function loadImage(file) {
+    return new Promise(resolve => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.src = URL.createObjectURL(file);
+    });
 }
 
-canvas{
-max-width:100%;
-border:1px solid #ccc;
-margin-top:20px;
-}
-</style>
-</head>
+function cropInfo(img, targetW, targetH) {
+    const srcRatio = img.width / img.height;
+    const dstRatio = targetW / targetH;
 
-<body>
+    let sx = 0;
+    let sy = 0;
+    let sw = img.width;
+    let sh = img.height;
 
-<h1>Wechselbild Generator</h1>
+    if (srcRatio > dstRatio) {
+        sw = img.height * dstRatio;
+        sx = (img.width - sw) / 2;
+    } else {
+        sh = img.width / dstRatio;
+        sy = (img.height - sh) / 2;
+    }
 
-<p>Bild A:</p>
-<input type="file" id="imgA">
-
-<p>Bild B:</p>
-<input type="file" id="imgB">
-
-<p>Anzahl Streifen:</p>
-<input type="number" id="stripes" value="24">
-
-<p>Breite:</p>
-<input type="number" id="width" value="2100">
-
-<p>Höhe:</p>
-<input type="number" id="height" value="900">
-
-<br><br>
-
-<button onclick="generate()">
-Bild erzeugen
-</button>
-
-<br><br>
-
-<a id="download" style="display:none">
-Download
-</a>
-
-<canvas id="canvas"></canvas>
-
-<script>
-
-function loadImage(file){
-return new Promise(resolve=>{
-const img=new Image();
-
-img.onload=()=>resolve(img);
-
-img.src=URL.createObjectURL(file);
-});
+    return { sx, sy, sw, sh };
 }
 
-async function generate(){
+async function generate() {
+    const files = [];
+    const inputA = document.getElementById("imgA");
+    const inputB = document.getElementById("imgB");
+    const inputC = document.getElementById("imgC");
 
-const fileA=
-document.getElementById("imgA").files[0];
+    if (inputA.files[0]) files.push(inputA.files[0]);
+    if (inputB.files[0]) files.push(inputB.files[0]);
+    if (inputC.files[0]) files.push(inputC.files[0]);
 
-const fileB=
-document.getElementById("imgB").files[0];
+    if (files.length < 2) {
+        alert("Bitte mindestens Bild A und Bild B auswählen.");
+        return;
+    }
 
-if(!fileA || !fileB){
-alert("Bitte beide Bilder auswählen");
-return;
+    const dpi = parseInt(document.getElementById("dpi").value);
+    let w = parseFloat(document.getElementById("widthMM").value);
+    let h = parseFloat(document.getElementById("heightMM").value);
+
+    const preset = document.getElementById("preset").value;
+
+    if (preset !== "custom") {
+        const r = preset.split(":");
+        h = w * parseFloat(r[1]) / parseFloat(r[0]);
+        document.getElementById("heightMM").value = h.toFixed(1);
+    }
+
+    const width = mmToPx(w, dpi);
+    const height = mmToPx(h, dpi);
+
+    let strips;
+
+    if (document.getElementById("mode").value === "count") {
+        strips = parseInt(document.getElementById("stripCount").value);
+    } else {
+        const swmm = parseFloat(document.getElementById("stripWidthMM").value);
+        const swpx = mmToPx(swmm, dpi);
+        strips = Math.floor(
+            (document.getElementById("orientation").value === "vertical" ? width : height) / swpx
+        );
+    }
+
+    const imgs = [];
+    for (const f of files) {
+        imgs.push(await loadImage(f));
+    }
+
+    const canvas = document.getElementById("canvas");
+    canvas.width = width;
+    canvas.height = height;
+
+    const ctx = canvas.getContext("2d");
+    const orientation = document.getElementById("orientation").value;
+
+    for (let i = 0; i < strips; i++) {
+        const img = imgs[i % imgs.length];
+        const c = cropInfo(img, width, height);
+
+        if (orientation === "vertical") {
+            const sw = c.sw / strips;
+            const dw = width / strips;
+
+            ctx.drawImage(
+                img,
+                c.sx + i * sw,
+                c.sy,
+                sw,
+                c.sh,
+                i * dw,
+                0,
+                dw,
+                height
+            );
+        } else {
+            const sh = c.sh / strips;
+            const dh = height / strips;
+
+            ctx.drawImage(
+                img,
+                c.sx,
+                c.sy + i * sh,
+                c.sw,
+                sh,
+                0,
+                i * dh,
+                width,
+                dh
+            );
+        }
+    }
+
+    document.getElementById("info").innerHTML =
+        "<p><b>Pixel:</b> " + width + " × " + height + "<br><b>Streifen:</b> " + strips + "</p>";
 }
 
-const imgA=await loadImage(fileA);
-const imgB=await loadImage(fileB);
+function downloadImage() {
+    const canvas = document.getElementById("canvas");
+    const type = document.getElementById("exportType").value;
+    const a = document.createElement("a");
 
-const stripes=
-parseInt(
-document.getElementById("stripes").value
-);
-
-const width=
-parseInt(
-document.getElementById("width").value
-);
-
-const height=
-parseInt(
-document.getElementById("height").value
-);
-
-const canvas=
-document.getElementById("canvas");
-
-canvas.width=width*2;
-canvas.height=height;
-
-const ctx=
-canvas.getContext("2d");
-
-const stripeWidth=
-width/stripes;
-
-for(let i=0;i<stripes;i++){
-
-const sx=i*imgA.width/stripes;
-
-const sw=imgA.width/stripes;
-
-ctx.drawImage(
-imgA,
-sx,
-0,
-sw,
-imgA.height,
-i*2*stripeWidth,
-0,
-stripeWidth,
-height
-);
-
-ctx.drawImage(
-imgB,
-sx,
-0,
-sw,
-imgB.height,
-(i*2+1)*stripeWidth,
-0,
-stripeWidth,
-height
-);
+    a.href = canvas.toDataURL(type, 0.95);
+    a.download = type === "image/png" ? "wechselbild.png" : "wechselbild.jpg";
+    a.click();
 }
-
-const link=
-document.getElementById("download");
-
-link.href=
-canvas.toDataURL("image/jpeg",1);
-
-link.download=
-"wechselbild.jpg";
-
-link.style.display="inline";
-
-link.innerText=
-"Bild herunterladen";
-}
-
-</script>
-
-</body>
-</html>
