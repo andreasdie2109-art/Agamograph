@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Wechselbild App Pro</title>
+<title>Wechselbild App Pro mit Passmarken</title>
 
 <style>
 body{
@@ -96,13 +96,6 @@ button{
 .btn-secondary:hover {
     background-color: #0056b3;
 }
-.btn-info {
-    background-color: #17a2b8;
-    color: white;
-}
-.btn-info:hover {
-    background-color: #138496;
-}
 #info {
     margin-top: 15px;
     padding: 10px;
@@ -121,7 +114,7 @@ button{
 
 <body>
 
-<h1>Wechselbild App Pro (Pure Version)</h1>
+<h1>Wechselbild App Pro (inkl. Rand-Passmarken)</h1>
 
 <div class="container">
     <div class="panel">
@@ -165,10 +158,10 @@ button{
             <option value="1:1">1:1</option>
         </select>
 
-        <label>Breite (mm)</label>
+        <label>Bild-Breite (mm)</label>
         <input type="number" id="widthMM" value="210" onchange="triggerUpdate()">
 
-        <label>Höhe (mm)</label>
+        <label>Bild-Höhe (mm)</label>
         <input type="number" id="heightMM" value="118" onchange="triggerUpdate()">
 
         <label>DPI</label>
@@ -206,8 +199,7 @@ button{
             <option value="image/png">PNG</option>
         </select>
 
-        <button class="btn-primary" onclick="downloadImage()">Druckbild herunterladen</button>
-        <button class="btn-info" onclick="downloadTemplate()">Falz-Schablone herunterladen</button>
+        <button class="btn-primary" onclick="downloadImage()">Druckbild mit Passmarken herunterladen</button>
     </div>
 
     <div class="preview-panel">
@@ -225,11 +217,10 @@ button{
     </div>
 </div>
 
-<canvas id="templateCanvas" style="display:none;"></canvas>
-
 <script>
 let loadedImages = { imgA: null, imgB: null, imgC: null };
 let isSimulating = false;
+const MARGIN_MM = 10; // 10mm weißer Rand rundherum für die Passmarken
 
 function mmToPx(mm, dpi) {
     return Math.round(mm * dpi / 25.4);
@@ -344,38 +335,72 @@ function generate() {
         document.getElementById("heightMM").value = h.toFixed(1);
     }
 
-    const width = mmToPx(w, dpi);
-    const height = mmToPx(h, dpi);
-    const strips = calculateStripsCount(width, height, dpi);
+    // Dimensionen des reinen Bildes
+    const imgWidth = mmToPx(w, dpi);
+    const imgHeight = mmToPx(h, dpi);
+    const strips = calculateStripsCount(imgWidth, imgHeight, dpi);
+    
+    // Dimensionen des Canvas inklusive weißem Rand
+    const marginPx = mmToPx(MARGIN_MM, dpi);
+    const totalWidth = imgWidth + (marginPx * 2);
+    const totalHeight = imgHeight + (marginPx * 2);
 
     const canvas = document.getElementById("canvas");
-    canvas.width = width;
-    canvas.height = height;
+    canvas.width = totalWidth;
+    canvas.height = totalHeight;
 
     const ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, width, height);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, totalWidth, totalHeight);
     
     const orientation = document.getElementById("orientation").value;
 
+    // 1. Bildstreifen rendern (verschoben in die Mitte des Rahmens)
     for (let i = 0; i < strips; i++) {
         const imgIndex = i % imgs.length;
         const img = imgs[imgIndex];
         const off = offsets[imgIndex];
         
-        const c = cropInfo(img, width, height, off.x, off.y);
+        const c = cropInfo(img, imgWidth, imgHeight, off.x, off.y);
 
         if (orientation === "vertical") {
             const sw = c.sw / strips;
-            const dw = width / strips;
-            ctx.drawImage(img, c.sx + i * sw, c.sy, sw, c.sh, i * dw, 0, dw, height);
+            const dw = imgWidth / strips;
+            ctx.drawImage(img, c.sx + i * sw, c.sy, sw, c.sh, marginPx + i * dw, marginPx, dw, imgHeight);
         } else {
             const sh = c.sh / strips;
-            const dh = height / strips;
-            ctx.drawImage(img, c.sx, c.sy + i * sh, c.sw, sh, 0, i * dh, width, dh);
+            const dh = imgHeight / strips;
+            ctx.drawImage(img, c.sx, c.sy + i * sh, c.sw, sh, marginPx, marginPx + i * dh, imgWidth, dh);
         }
     }
 
-    infoDiv.innerHTML = `<strong>Druckbild bereit!</strong><br>Pixelgröße: ${width} × ${height} px<br>Streifen: ${strips}`;
+    // 2. Passmarken auf dem weißen Rand einzeichnen (Außerhalb des Bildes)
+    ctx.strokeStyle = "#000000";
+    ctx.lineWidth = Math.max(1, Math.round(dpi / 300)); // Sehr feine Linien
+    
+    for (let i = 0; i <= strips; i++) {
+        ctx.beginPath();
+        if (orientation === "vertical") {
+            const x = marginPx + (imgWidth / strips) * i;
+            // Obere Passmarke
+            ctx.moveTo(x, marginPx - 8);
+            ctx.lineTo(x, marginPx);
+            // Untere Passmarke
+            ctx.moveTo(x, marginPx + imgHeight);
+            ctx.lineTo(x, marginPx + imgHeight + 8);
+        } else {
+            const y = marginPx + (imgHeight / strips) * i;
+            // Linke Passmarke
+            ctx.moveTo(marginPx - 8, y);
+            ctx.lineTo(marginPx, y);
+            // Rechte Passmarke
+            ctx.moveTo(marginPx + imgWidth, y);
+            ctx.lineTo(marginPx + imgWidth + 8);
+        }
+        ctx.stroke();
+    }
+
+    infoDiv.innerHTML = `<strong>Druckbild bereit!</strong><br>Bildgröße: ${imgWidth} × ${imgHeight} px<br>Gesamtgröße (inkl. Rand): ${totalWidth} × ${totalHeight} px<br>Streifen: ${strips}`;
 }
 
 function simulateView() {
@@ -392,9 +417,16 @@ function simulateView() {
 
     isSimulating = true;
 
-    const width = canvas.width;
-    const height = canvas.height;
-    ctx.clearRect(0, 0, width, height);
+    const dpi = parseInt(document.getElementById("dpi").value);
+    const marginPx = mmToPx(MARGIN_MM, dpi);
+    const totalWidth = canvas.width;
+    const totalHeight = canvas.height;
+    
+    const imgWidth = totalWidth - (marginPx * 2);
+    const imgHeight = totalHeight - (marginPx * 2);
+
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, totalWidth, totalHeight);
 
     let imgIndexA = 0;
     let imgIndexB = 1;
@@ -423,59 +455,16 @@ function simulateView() {
 
     // Bild A im Simulator
     ctx.globalAlpha = 1 - weight;
-    const cA = cropInfo(imgs[imgIndexA], width, height, offsets[imgIndexA].x, offsets[imgIndexA].y);
-    ctx.drawImage(imgs[imgIndexA], cA.sx, cA.sy, cA.sw, cA.sh, 0, 0, width, height);
+    const cA = cropInfo(imgs[imgIndexA], imgWidth, imgHeight, offsets[imgIndexA].x, offsets[imgIndexA].y);
+    ctx.drawImage(imgs[imgIndexA], cA.sx, cA.sy, cA.sw, cA.sh, marginPx, marginPx, imgWidth, imgHeight);
 
     // Bild B im Simulator
     ctx.globalAlpha = weight;
-    const cB = cropInfo(imgs[imgIndexB], width, height, offsets[imgIndexB].x, offsets[imgIndexB].y);
-    ctx.drawImage(imgs[imgIndexB], cB.sx, cB.sy, cB.sw, cB.sh, 0, 0, width, height);
+    const cB = cropInfo(imgs[imgIndexB], imgWidth, imgHeight, offsets[imgIndexB].x, offsets[imgIndexB].y);
+    ctx.drawImage(imgs[imgIndexB], cB.sx, cB.sy, cB.sw, cB.sh, marginPx, marginPx, imgWidth, imgHeight);
 
     ctx.globalAlpha = 1.0; 
-    document.getElementById("info").innerHTML = "<em>Vorschau-Simulation aktiv</em>";
-}
-
-function downloadTemplate() {
-    const dpi = parseInt(document.getElementById("dpi").value);
-    const w = parseFloat(document.getElementById("widthMM").value);
-    const h = parseFloat(document.getElementById("heightMM").value);
-    
-    const width = mmToPx(w, dpi);
-    const height = mmToPx(h, dpi);
-    const strips = calculateStripsCount(width, height, dpi);
-    const orientation = document.getElementById("orientation").value;
-
-    const tCanvas = document.getElementById("templateCanvas");
-    tCanvas.width = width;
-    tCanvas.height = height;
-    
-    const tCtx = tCanvas.getContext("2d");
-    tCtx.fillStyle = "#ffffff";
-    tCtx.fillRect(0, 0, width, height);
-
-    // Dünne graue Trennlinien für die Schablone
-    tCtx.strokeStyle = "#a0a0a0";
-    tCtx.lineWidth = Math.max(1, Math.round(dpi / 150)); 
-
-    for (let i = 1; i < strips; i++) {
-        tCtx.beginPath();
-        if (orientation === "vertical") {
-            const x = (width / strips) * i;
-            tCtx.moveTo(x, 0);
-            tCtx.lineTo(x, height);
-        } else {
-            const y = (height / strips) * i;
-            tCtx.moveTo(0, y);
-            tCtx.lineTo(width, y);
-        }
-        tCtx.stroke();
-    }
-
-    const type = document.getElementById("exportType").value;
-    const a = document.createElement("a");
-    a.href = tCanvas.toDataURL(type, 0.95);
-    a.download = type === "image/png" ? "falz_schablone.png" : "falz_schablone.jpg";
-    a.click();
+    document.getElementById("info").innerHTML = "<em>Vorschau-Simulation aktiv (Rahmen bleibt weiß)</em>";
 }
 
 function downloadImage() {
@@ -484,7 +473,7 @@ function downloadImage() {
     const type = document.getElementById("exportType").value;
     const a = document.createElement("a");
     a.href = canvas.toDataURL(type, 0.95);
-    a.download = type === "image/png" ? "wechselbild_druck.png" : "wechselbild_druck.jpg";
+    a.download = type === "image/png" ? "wechselbild_mit_passmarken.png" : "wechselbild_mit_passmarken.jpg";
     a.click();
 }
 </script>
