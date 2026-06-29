@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Wechselbild App Pro mit Passmarken</title>
+<title>Wechselbild App Pro – Flexibler Rand</title>
 
 <style>
 body{
@@ -65,6 +65,20 @@ input, select {
 .control-block input {
     margin-bottom: 4px;
 }
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px !important;
+    font-weight: bold !important;
+    cursor: pointer;
+    margin-top: 15px;
+    margin-bottom: 15px;
+}
+.checkbox-label input {
+    width: auto;
+    margin: 0;
+}
 canvas{
     max-width:100%;
     border:2px dashed #bbb;
@@ -114,7 +128,7 @@ button{
 
 <body>
 
-<h1>Wechselbild App Pro (inkl. Rand-Passmarken)</h1>
+<h1>Wechselbild App Pro (Flexibler Rand)</h1>
 
 <div class="container">
     <div class="panel">
@@ -172,6 +186,15 @@ button{
         </select>
 
         <hr>
+        
+        <label>Breite Rand rundherum (mm)</label>
+        <input type="number" id="marginMM" value="10" min="0" onchange="triggerUpdate()">
+
+        <label class="checkbox-label">
+            <input type="checkbox" id="usePassmarks" checked onchange="triggerUpdate()"> Passmarken aktivieren
+        </label>
+
+        <hr>
 
         <label>Modus</label>
         <select id="mode" onchange="triggerUpdate()">
@@ -199,7 +222,7 @@ button{
             <option value="image/png">PNG</option>
         </select>
 
-        <button class="btn-primary" onclick="downloadImage()">Druckbild mit Passmarken herunterladen</button>
+        <button class="btn-primary" onclick="downloadImage()">Druckbild herunterladen</button>
     </div>
 
     <div class="preview-panel">
@@ -220,7 +243,6 @@ button{
 <script>
 let loadedImages = { imgA: null, imgB: null, imgC: null };
 let isSimulating = false;
-const MARGIN_MM = 10; // 10mm weißer Rand rundherum für die Passmarken
 
 function mmToPx(mm, dpi) {
     return Math.round(mm * dpi / 25.4);
@@ -327,6 +349,8 @@ function generate() {
     const dpi = parseInt(document.getElementById("dpi").value);
     let w = parseFloat(document.getElementById("widthMM").value);
     let h = parseFloat(document.getElementById("heightMM").value);
+    let marginMM = parseFloat(document.getElementById("marginMM").value) || 0;
+    let usePassmarks = document.getElementById("usePassmarks").checked;
 
     const preset = document.getElementById("preset").value;
     if (preset !== "custom") {
@@ -335,13 +359,12 @@ function generate() {
         document.getElementById("heightMM").value = h.toFixed(1);
     }
 
-    // Dimensionen des reinen Bildes
     const imgWidth = mmToPx(w, dpi);
     const imgHeight = mmToPx(h, dpi);
     const strips = calculateStripsCount(imgWidth, imgHeight, dpi);
     
-    // Dimensionen des Canvas inklusive weißem Rand
-    const marginPx = mmToPx(MARGIN_MM, dpi);
+    // Berechne den dynamischen Pixel-Rand
+    const marginPx = mmToPx(marginMM, dpi);
     const totalWidth = imgWidth + (marginPx * 2);
     const totalHeight = imgHeight + (marginPx * 2);
 
@@ -355,7 +378,7 @@ function generate() {
     
     const orientation = document.getElementById("orientation").value;
 
-    // 1. Bildstreifen rendern (verschoben in die Mitte des Rahmens)
+    // 1. Bildstreifen zuschneiden und mit Versatz platzieren
     for (let i = 0; i < strips; i++) {
         const imgIndex = i % imgs.length;
         const img = imgs[imgIndex];
@@ -374,30 +397,35 @@ function generate() {
         }
     }
 
-    // 2. Passmarken auf dem weißen Rand einzeichnen (Außerhalb des Bildes)
-    ctx.strokeStyle = "#000000";
-    ctx.lineWidth = Math.max(1, Math.round(dpi / 300)); // Sehr feine Linien
-    
-    for (let i = 0; i <= strips; i++) {
-        ctx.beginPath();
-        if (orientation === "vertical") {
-            const x = marginPx + (imgWidth / strips) * i;
-            // Obere Passmarke
-            ctx.moveTo(x, marginPx - 8);
-            ctx.lineTo(x, marginPx);
-            // Untere Passmarke
-            ctx.moveTo(x, marginPx + imgHeight);
-            ctx.lineTo(x, marginPx + imgHeight + 8);
-        } else {
-            const y = marginPx + (imgHeight / strips) * i;
-            // Linke Passmarke
-            ctx.moveTo(marginPx - 8, y);
-            ctx.lineTo(marginPx, y);
-            // Rechte Passmarke
-            ctx.moveTo(marginPx + imgWidth, y);
-            ctx.lineTo(marginPx + imgWidth + 8);
+    // 2. Optionale Passmarken (nur zeichnen, wenn aktiviert und Rand vorhanden ist)
+    if (usePassmarks && marginPx > 0) {
+        ctx.strokeStyle = "#000000";
+        ctx.lineWidth = Math.max(1, Math.round(dpi / 300));
+        
+        // Die Länge der Passmarke passt sich dem verfügbaren Rand an (max. 80% des Randes)
+        const markLength = Math.min(marginPx * 0.8, Math.round(dpi * 8 / 25.4)); 
+        
+        for (let i = 0; i <= strips; i++) {
+            ctx.beginPath();
+            if (orientation === "vertical") {
+                const x = marginPx + (imgWidth / strips) * i;
+                // Oben
+                ctx.moveTo(x, marginPx - markLength);
+                ctx.lineTo(x, marginPx);
+                // Unten
+                ctx.moveTo(x, marginPx + imgHeight);
+                ctx.lineTo(x, marginPx + imgHeight + markLength);
+            } else {
+                const y = marginPx + (imgHeight / strips) * i;
+                // Links
+                ctx.moveTo(marginPx - markLength, y);
+                ctx.lineTo(marginPx, y);
+                // Rechts
+                ctx.moveTo(marginPx + imgWidth, y);
+                ctx.lineTo(marginPx + imgWidth + markLength);
+            }
+            ctx.stroke();
         }
-        ctx.stroke();
     }
 
     infoDiv.innerHTML = `<strong>Druckbild bereit!</strong><br>Bildgröße: ${imgWidth} × ${imgHeight} px<br>Gesamtgröße (inkl. Rand): ${totalWidth} × ${totalHeight} px<br>Streifen: ${strips}`;
@@ -418,7 +446,9 @@ function simulateView() {
     isSimulating = true;
 
     const dpi = parseInt(document.getElementById("dpi").value);
-    const marginPx = mmToPx(MARGIN_MM, dpi);
+    let marginMM = parseFloat(document.getElementById("marginMM").value) || 0;
+    const marginPx = mmToPx(marginMM, dpi);
+    
     const totalWidth = canvas.width;
     const totalHeight = canvas.height;
     
@@ -453,18 +483,16 @@ function simulateView() {
     if (loadedImages.imgB) offsets.push({x: parseFloat(offsetXB.value), y: parseFloat(offsetYB.value)});
     if (loadedImages.imgC) offsets.push({x: parseFloat(offsetXC.value), y: parseFloat(offsetYC.value)});
 
-    // Bild A im Simulator
     ctx.globalAlpha = 1 - weight;
     const cA = cropInfo(imgs[imgIndexA], imgWidth, imgHeight, offsets[imgIndexA].x, offsets[imgIndexA].y);
     ctx.drawImage(imgs[imgIndexA], cA.sx, cA.sy, cA.sw, cA.sh, marginPx, marginPx, imgWidth, imgHeight);
 
-    // Bild B im Simulator
     ctx.globalAlpha = weight;
     const cB = cropInfo(imgs[imgIndexB], imgWidth, imgHeight, offsets[imgIndexB].x, offsets[imgIndexB].y);
     ctx.drawImage(imgs[imgIndexB], cB.sx, cB.sy, cB.sw, cB.sh, marginPx, marginPx, imgWidth, imgHeight);
 
     ctx.globalAlpha = 1.0; 
-    document.getElementById("info").innerHTML = "<em>Vorschau-Simulation aktiv (Rahmen bleibt weiß)</em>";
+    document.getElementById("info").innerHTML = "<em>Vorschau-Simulation aktiv</em>";
 }
 
 function downloadImage() {
@@ -472,8 +500,9 @@ function downloadImage() {
     const canvas = document.getElementById("canvas");
     const type = document.getElementById("exportType").value;
     const a = document.createElement("a");
+    const suffix = document.getElementById("usePassmarks").checked ? "_mit_marken" : "_pur";
     a.href = canvas.toDataURL(type, 0.95);
-    a.download = type === "image/png" ? "wechselbild_mit_passmarken.png" : "wechselbild_mit_passmarken.jpg";
+    a.download = "wechselbild" + suffix + (type === "image/png" ? ".png" : ".jpg");
     a.click();
 }
 </script>
