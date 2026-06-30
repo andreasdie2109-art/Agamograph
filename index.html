@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Wechselbild App Pro – Flexibler Rand</title>
+<title>Wechselbild App Pro – Volle Bildinformation</title>
 
 <style>
 body{
@@ -128,7 +128,7 @@ button{
 
 <body>
 
-<h1>Wechselbild App Pro (Flexibler Rand)</h1>
+<h1>Wechselbild App Pro (100% Bildinfo-Erhalt)</h1>
 
 <div class="container">
     <div class="panel">
@@ -363,7 +363,6 @@ function generate() {
     const imgHeight = mmToPx(h, dpi);
     const strips = calculateStripsCount(imgWidth, imgHeight, dpi);
     
-    // Berechne den dynamischen Pixel-Rand
     const marginPx = mmToPx(marginMM, dpi);
     const totalWidth = imgWidth + (marginPx * 2);
     const totalHeight = imgHeight + (marginPx * 2);
@@ -377,50 +376,55 @@ function generate() {
     ctx.fillRect(0, 0, totalWidth, totalHeight);
     
     const orientation = document.getElementById("orientation").value;
+    const L = imgs.length;
 
-    // 1. Bildstreifen zuschneiden und mit Versatz platzieren
+    // 1. Bildstreifen zuschneiden und lückenlos stauchen (Kompression statt Informationsverlust)
     for (let i = 0; i < strips; i++) {
-        const imgIndex = i % imgs.length;
+        const imgIndex = i % L;
         const img = imgs[imgIndex];
         const off = offsets[imgIndex];
+        
+        // Berechne, wie viele Streifen dieses spezifische Bild im gesamten Raster bekommt
+        let totalSlicesForImg = 0;
+        for (let k = 0; k < strips; k++) {
+            if (k % L === imgIndex) totalSlicesForImg++;
+        }
+        
+        // Welcher Streifen dieses Bildes ist der aktuelle?
+        const sliceIndex = Math.floor(i / L);
         
         const c = cropInfo(img, imgWidth, imgHeight, off.x, off.y);
 
         if (orientation === "vertical") {
-            const sw = c.sw / strips;
+            // sw tastet das Quellbild nun in exakt gleichmäßig gestauchten Schritten von 0 bis 100% ab
+            const sw = c.sw / totalSlicesForImg;
             const dw = imgWidth / strips;
-            ctx.drawImage(img, c.sx + i * sw, c.sy, sw, c.sh, marginPx + i * dw, marginPx, dw, imgHeight);
+            ctx.drawImage(img, c.sx + sliceIndex * sw, c.sy, sw, c.sh, marginPx + i * dw, marginPx, dw, imgHeight);
         } else {
-            const sh = c.sh / strips;
+            const sh = c.sh / totalSlicesForImg;
             const dh = imgHeight / strips;
-            ctx.drawImage(img, c.sx, c.sy + i * sh, c.sw, sh, marginPx, marginPx + i * dh, imgWidth, dh);
+            ctx.drawImage(img, c.sx, c.sy + sliceIndex * sh, c.sw, sh, marginPx, marginPx + i * dh, imgWidth, dh);
         }
     }
 
-    // 2. Optionale Passmarken (nur zeichnen, wenn aktiviert und Rand vorhanden ist)
+    // 2. Optionale Passmarken
     if (usePassmarks && marginPx > 0) {
         ctx.strokeStyle = "#000000";
         ctx.lineWidth = Math.max(1, Math.round(dpi / 300));
-        
-        // Die Länge der Passmarke passt sich dem verfügbaren Rand an (max. 80% des Randes)
         const markLength = Math.min(marginPx * 0.8, Math.round(dpi * 8 / 25.4)); 
         
         for (let i = 0; i <= strips; i++) {
             ctx.beginPath();
             if (orientation === "vertical") {
                 const x = marginPx + (imgWidth / strips) * i;
-                // Oben
                 ctx.moveTo(x, marginPx - markLength);
                 ctx.lineTo(x, marginPx);
-                // Unten
                 ctx.moveTo(x, marginPx + imgHeight);
                 ctx.lineTo(x, marginPx + imgHeight + markLength);
             } else {
                 const y = marginPx + (imgHeight / strips) * i;
-                // Links
                 ctx.moveTo(marginPx - markLength, y);
                 ctx.lineTo(marginPx, y);
-                // Rechts
                 ctx.moveTo(marginPx + imgWidth, y);
                 ctx.lineTo(marginPx + imgWidth + markLength);
             }
@@ -428,7 +432,7 @@ function generate() {
         }
     }
 
-    infoDiv.innerHTML = `<strong>Druckbild bereit!</strong><br>Bildgröße: ${imgWidth} × ${imgHeight} px<br>Gesamtgröße (inkl. Rand): ${totalWidth} × ${totalHeight} px<br>Streifen: ${strips}`;
+    infoDiv.innerHTML = `<strong>Druckbild bereit!</strong><br>Bildgröße: ${imgWidth} × ${imgHeight} px<br>Gesamtgröße (inkl. Rand): ${totalWidth} × ${totalHeight} px<br>Streifen: ${strips}<br><em>Hinweis: 100% der Bildinformationen sind in die Streifen komprimiert.</em>`;
 }
 
 function simulateView() {
@@ -483,6 +487,7 @@ function simulateView() {
     if (loadedImages.imgB) offsets.push({x: parseFloat(offsetXB.value), y: parseFloat(offsetYB.value)});
     if (loadedImages.imgC) offsets.push({x: parseFloat(offsetXC.value), y: parseFloat(offsetYC.value)});
 
+    // Der Simulator zeigt das optisch entfaltete (korrekte) Bild an
     ctx.globalAlpha = 1 - weight;
     const cA = cropInfo(imgs[imgIndexA], imgWidth, imgHeight, offsets[imgIndexA].x, offsets[imgIndexA].y);
     ctx.drawImage(imgs[imgIndexA], cA.sx, cA.sy, cA.sw, cA.sh, marginPx, marginPx, imgWidth, imgHeight);
@@ -492,7 +497,7 @@ function simulateView() {
     ctx.drawImage(imgs[imgIndexB], cB.sx, cB.sy, cB.sw, cB.sh, marginPx, marginPx, imgWidth, imgHeight);
 
     ctx.globalAlpha = 1.0; 
-    document.getElementById("info").innerHTML = "<em>Vorschau-Simulation aktiv</em>";
+    document.getElementById("info").innerHTML = "<em>Vorschau-Simulation aktiv (Entfaltete Perspektive)</em>";
 }
 
 function downloadImage() {
@@ -502,7 +507,7 @@ function downloadImage() {
     const a = document.createElement("a");
     const suffix = document.getElementById("usePassmarks").checked ? "_mit_marken" : "_pur";
     a.href = canvas.toDataURL(type, 0.95);
-    a.download = "wechselbild" + suffix + (type === "image/png" ? ".png" : ".jpg");
+    a.download = "wechselbild_komprimiert" + suffix + (type === "image/png" ? ".png" : ".jpg");
     a.click();
 }
 </script>
