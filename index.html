@@ -499,18 +499,29 @@ function simulateView() {
     ctx.globalAlpha = 1.0; 
     document.getElementById("info").innerHTML = "<em>Vorschau-Simulation aktiv (Entfaltete Perspektive)</em>";
 }
-
 function downloadImage() {
     resetToStrips();
     const canvas = document.getElementById("canvas");
     const type = document.getElementById("exportType").value;
-    const a = document.createElement("a");
-    const suffix = document.getElementById("usePassmarks").checked ? "_mit_marken" : "_pur";
-    a.href = canvas.toDataURL(type, 0.95);
-    a.download = "wechselbild_komprimiert" + suffix + (type === "image/png" ? ".png" : ".jpg");
-    a.click();
+    
+    // Konvertiert das Bild für iOS/Safari verträglich
+    canvas.toBlob(function(blob) {
+        if (!blob) {
+            alert("Das Bild ist zu groß für den Speicher des iPads. Bitte reduziere die DPI auf 150 oder 300.");
+            return;
+        }
+        const url = URL.createObjectURL(blob);
+        
+        // Öffnet das Bild in einem neuen Tab für einwandfreien iOS-Download
+        const newTab = window.open(url, '_blank');
+        if (!newTab) {
+            // Falls Pop-ups blockiert sind, als gewohnter Download
+            const a = document.createElement("a");
+            const suffix = document.getElementById("usePassmarks").checked ? "_mit_marken" : "_pur";
+            a.href = url;
+            a.download = "wechselbild_komprimiert" + suffix + (type === "image/png" ? ".png" : ".jpg");
+            a.click();
+        }
+    }, type, 0.95);
 }
-</script>
 
-</body>
-</html>
