@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Wechselbild App Pro – Exakter Versatz & Zoom</title>
+<title>Wechselbild App Pro – Einheitliche Zielgröße</title>
 
 <style>
 body{
@@ -62,7 +62,7 @@ input, select {
     margin-top: 6px;
     font-weight: normal;
 }
-.control-block input {
+.control-block input, .control-block select {
     margin-bottom: 4px;
 }
 .checkbox-label {
@@ -145,6 +145,13 @@ button{
             <label style="font-weight:bold; font-size:14px;">Bild A</label>
             <input type="file" id="imgA" accept="image/*" onchange="triggerUpdate()">
             
+            <label>Anpassung an Zielgröße</label>
+            <select id="fitA" onchange="triggerUpdate()">
+                <option value="cover" selected>Ausfüllen (Cover - Proportional)</option>
+                <option value="contain">Vollständig anzeigen (Contain)</option>
+                <option value="stretch">Verzerren / Strecken (Stretch)</option>
+            </select>
+
             <label>Zoom <span class="val-display" id="valScaleA">100%</span></label>
             <input type="range" id="scaleA" min="10" max="300" value="100" oninput="updateValDisplay('valScaleA', this.value + '%'); triggerUpdate()">
 
@@ -160,6 +167,13 @@ button{
             <label style="font-weight:bold; font-size:14px;">Bild B</label>
             <input type="file" id="imgB" accept="image/*" onchange="triggerUpdate()">
             
+            <label>Anpassung an Zielgröße</label>
+            <select id="fitB" onchange="triggerUpdate()">
+                <option value="cover" selected>Ausfüllen (Cover - Proportional)</option>
+                <option value="contain">Vollständig anzeigen (Contain)</option>
+                <option value="stretch">Verzerren / Strecken (Stretch)</option>
+            </select>
+
             <label>Zoom <span class="val-display" id="valScaleB">100%</span></label>
             <input type="range" id="scaleB" min="10" max="300" value="100" oninput="updateValDisplay('valScaleB', this.value + '%'); triggerUpdate()">
 
@@ -175,6 +189,13 @@ button{
             <label style="font-weight:bold; font-size:14px;">Optional Bild C</label>
             <input type="file" id="imgC" accept="image/*" onchange="triggerUpdate()">
             
+            <label>Anpassung an Zielgröße</label>
+            <select id="fitC" onchange="triggerUpdate()">
+                <option value="cover" selected>Ausfüllen (Cover - Proportional)</option>
+                <option value="contain">Vollständig anzeigen (Contain)</option>
+                <option value="stretch">Verzerren / Strecken (Stretch)</option>
+            </select>
+
             <label>Zoom <span class="val-display" id="valScaleC">100%</span></label>
             <input type="range" id="scaleC" min="10" max="300" value="100" oninput="updateValDisplay('valScaleC', this.value + '%'); triggerUpdate()">
 
@@ -187,7 +208,7 @@ button{
 
         <hr>
 
-        <label>Format</label>
+        <label>Ziel-Format</label>
         <select id="preset" onchange="triggerUpdate()">
             <option value="custom">Benutzerdefiniert</option>
             <option value="21:9">21:9</option>
@@ -197,10 +218,10 @@ button{
             <option value="1:1">1:1</option>
         </select>
 
-        <label>Bild-Breite (mm)</label>
+        <label>Ziel-Breite (mm)</label>
         <input type="number" id="widthMM" value="210" onchange="triggerUpdate()">
 
-        <label>Bild-Höhe (mm)</label>
+        <label>Ziel-Höhe (mm)</label>
         <input type="number" id="heightMM" value="118" onchange="triggerUpdate()">
 
         <label>DPI</label>
@@ -293,33 +314,46 @@ function loadImage(file) {
 }
 
 /**
- * Exakte Positionsberechnung ohne Achsen-Stauchung
+ * Universal-Berechnung zur Anpassung unterschiedlicher Bildgrößen an eine feste Zielgröße
  */
-function getDrawGeometry(img, targetW, targetH, zoomPercent, percentOffsetX, percentOffsetY) {
+function getDrawGeometry(img, targetW, targetH, zoomPercent, percentOffsetX, percentOffsetY, fitMode) {
     const scale = (zoomPercent || 100) / 100;
     
-    // Proportionale Anpassung (Cover)
-    const imgRatio = img.width / img.height;
-    const targetRatio = targetW / targetH;
-    
-    let baseW, baseH;
-    if (imgRatio > targetRatio) {
-        baseH = targetH;
-        baseW = targetH * imgRatio;
-    } else {
-        baseW = targetW;
-        baseH = targetW / imgRatio;
+    let baseW = targetW;
+    let baseH = targetH;
+
+    if (fitMode !== "stretch") {
+        const imgRatio = img.width / img.height;
+        const targetRatio = targetW / targetH;
+        
+        if (fitMode === "cover") {
+            if (imgRatio > targetRatio) {
+                baseH = targetH;
+                baseW = targetH * imgRatio;
+            } else {
+                baseW = targetW;
+                baseH = targetW / imgRatio;
+            }
+        } else if (fitMode === "contain") {
+            if (imgRatio > targetRatio) {
+                baseW = targetW;
+                baseH = targetW / imgRatio;
+            } else {
+                baseH = targetH;
+                baseW = targetH * imgRatio;
+            }
+        }
     }
 
-    // Proportionaler Zoom
+    // Proportionaler Zoom auf die gewählte Grund-Anpassung
     const drawW = baseW * scale;
     const drawH = baseH * scale;
 
-    // Basis-Zentrierung auf dem Canvas-Abschnitt
+    // Basis-Zentrierung
     let drawX = (targetW - drawW) / 2;
     let drawY = (targetH - drawH) / 2;
 
-    // Linearer Versatz proportional zur Zielgröße (ohne Stauchung der Streifen)
+    // Entkoppelter Versatz
     drawX += targetW * (percentOffsetX / 100);
     drawY += targetH * (percentOffsetY / 100);
 
@@ -382,15 +416,15 @@ function generate() {
     
     if (loadedImages.imgA) { 
         imgs.push(loadedImages.imgA); 
-        params.push({x: parseFloat(offsetXA.value), y: parseFloat(offsetYA.value), scale: parseFloat(scaleA.value)}); 
+        params.push({x: parseFloat(offsetXA.value), y: parseFloat(offsetYA.value), scale: parseFloat(scaleA.value), fit: fitA.value}); 
     }
     if (loadedImages.imgB) { 
         imgs.push(loadedImages.imgB); 
-        params.push({x: parseFloat(offsetXB.value), y: parseFloat(offsetYB.value), scale: parseFloat(scaleB.value)}); 
+        params.push({x: parseFloat(offsetXB.value), y: parseFloat(offsetYB.value), scale: parseFloat(scaleB.value), fit: fitB.value}); 
     }
     if (loadedImages.imgC) { 
         imgs.push(loadedImages.imgC); 
-        params.push({x: parseFloat(offsetXC.value), y: parseFloat(offsetYC.value), scale: parseFloat(scaleC.value)}); 
+        params.push({x: parseFloat(offsetXC.value), y: parseFloat(offsetYC.value), scale: parseFloat(scaleC.value), fit: fitC.value}); 
     }
 
     if (imgs.length < 2) {
@@ -430,7 +464,7 @@ function generate() {
     const orientation = document.getElementById("orientation").value;
     const L = imgs.length;
 
-    // Präzise Maskierung (verhindert Skalierungsverzerrung bei X/Y-Versatz)
+    // Bildstreifen-Generierung
     for (let i = 0; i < strips; i++) {
         const imgIndex = i % L;
         const img = imgs[imgIndex];
@@ -449,8 +483,8 @@ function generate() {
 
         ctx.clip();
 
-        // Zeichnet das ungeschnittene, unverzerrte Bild exakt an die Zielposition
-        const geo = getDrawGeometry(img, imgWidth, imgHeight, p.scale, p.x, p.y);
+        // Zeichnet das Bild angepasst an die einheitliche Ziel-Größe
+        const geo = getDrawGeometry(img, imgWidth, imgHeight, p.scale, p.x, p.y, p.fit);
         ctx.drawImage(img, marginPx + geo.drawX, marginPx + geo.drawY, geo.drawW, geo.drawH);
 
         ctx.restore();
@@ -532,9 +566,9 @@ function simulateView() {
     }
 
     const params = [];
-    if (loadedImages.imgA) params.push({x: parseFloat(offsetXA.value), y: parseFloat(offsetYA.value), scale: parseFloat(scaleA.value)});
-    if (loadedImages.imgB) params.push({x: parseFloat(offsetXB.value), y: parseFloat(offsetYB.value), scale: parseFloat(scaleB.value)});
-    if (loadedImages.imgC) params.push({x: parseFloat(offsetXC.value), y: parseFloat(offsetYC.value), scale: parseFloat(scaleC.value)});
+    if (loadedImages.imgA) params.push({x: parseFloat(offsetXA.value), y: parseFloat(offsetYA.value), scale: parseFloat(scaleA.value), fit: fitA.value});
+    if (loadedImages.imgB) params.push({x: parseFloat(offsetXB.value), y: parseFloat(offsetYB.value), scale: parseFloat(scaleB.value), fit: fitB.value});
+    if (loadedImages.imgC) params.push({x: parseFloat(offsetXC.value), y: parseFloat(offsetYC.value), scale: parseFloat(scaleC.value), fit: fitC.value});
 
     ctx.save();
     ctx.beginPath();
@@ -542,11 +576,11 @@ function simulateView() {
     ctx.clip();
 
     ctx.globalAlpha = 1 - weight;
-    const geoA = getDrawGeometry(imgs[imgIndexA], imgWidth, imgHeight, params[imgIndexA].scale, params[imgIndexA].x, params[imgIndexA].y);
+    const geoA = getDrawGeometry(imgs[imgIndexA], imgWidth, imgHeight, params[imgIndexA].scale, params[imgIndexA].x, params[imgIndexA].y, params[imgIndexA].fit);
     ctx.drawImage(imgs[imgIndexA], marginPx + geoA.drawX, marginPx + geoA.drawY, geoA.drawW, geoA.drawH);
 
     ctx.globalAlpha = weight;
-    const geoB = getDrawGeometry(imgs[imgIndexB], imgWidth, imgHeight, params[imgIndexB].scale, params[imgIndexB].x, params[imgIndexB].y);
+    const geoB = getDrawGeometry(imgs[imgIndexB], imgWidth, imgHeight, params[imgIndexB].scale, params[imgIndexB].x, params[imgIndexB].y, params[imgIndexB].fit);
     ctx.drawImage(imgs[imgIndexB], marginPx + geoB.drawX, marginPx + geoB.drawY, geoB.drawW, geoB.drawH);
 
     ctx.restore();
