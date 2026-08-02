@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Wechselbild App Pro – Volle Bildinfo & iPad Download-Fix</title>
+<title>Wechselbild App Pro – Volle Bildinfo & Skalierung</title>
 
 <style>
 body{
@@ -59,7 +59,7 @@ input, select {
 
 .control-block label {
     font-size: 11px;
-    margin-top: 4px;
+    margin-top: 6px;
     font-weight: normal;
 }
 .control-block input {
@@ -123,12 +123,18 @@ button{
     border-radius: 6px;
     border: 1px solid #b8daff;
 }
+.val-display {
+    font-size: 11px;
+    font-weight: bold;
+    color: #333;
+    float: right;
+}
 </style>
 </head>
 
 <body>
 
-<h1>Wechselbild App Pro (iPad Fix)</h1>
+<h1>Wechselbild App Pro (inkl. Einzelbild-Skalierung)</h1>
 
 <div class="container">
     <!-- EINSTELLUNGEN -->
@@ -139,9 +145,14 @@ button{
             <label style="font-weight:bold; font-size:14px;">Bild A</label>
             <input type="file" id="imgA" accept="image/*" onchange="triggerUpdate()">
             
-            <label>Horizontaler / Vertikaler Versatz</label>
-            <input type="range" id="offsetXA" min="-100" max="100" value="0" oninput="triggerUpdate()">
-            <input type="range" id="offsetYA" min="-100" max="100" value="0" oninput="triggerUpdate()">
+            <label>Zoom / Skalierung <span class="val-display" id="valScaleA">100%</span></label>
+            <input type="range" id="scaleA" min="10" max="300" value="100" oninput="updateValDisplay('valScaleA', this.value + '%'); triggerUpdate()">
+
+            <label>Horizontaler Versatz (X) <span class="val-display" id="valXA">0%</span></label>
+            <input type="range" id="offsetXA" min="-100" max="100" value="0" oninput="updateValDisplay('valXA', this.value + '%'); triggerUpdate()">
+            
+            <label>Vertikaler Versatz (Y) <span class="val-display" id="valYA">0%</span></label>
+            <input type="range" id="offsetYA" min="-100" max="100" value="0" oninput="updateValDisplay('valYA', this.value + '%'); triggerUpdate()">
         </div>
 
         <!-- BILD B -->
@@ -149,9 +160,14 @@ button{
             <label style="font-weight:bold; font-size:14px;">Bild B</label>
             <input type="file" id="imgB" accept="image/*" onchange="triggerUpdate()">
             
-            <label>Horizontaler / Vertikaler Versatz</label>
-            <input type="range" id="offsetXB" min="-100" max="100" value="0" oninput="triggerUpdate()">
-            <input type="range" id="offsetYB" min="-100" max="100" value="0" oninput="triggerUpdate()">
+            <label>Zoom / Skalierung <span class="val-display" id="valScaleB">100%</span></label>
+            <input type="range" id="scaleB" min="10" max="300" value="100" oninput="updateValDisplay('valScaleB', this.value + '%'); triggerUpdate()">
+
+            <label>Horizontaler Versatz (X) <span class="val-display" id="valXB">0%</span></label>
+            <input type="range" id="offsetXB" min="-100" max="100" value="0" oninput="updateValDisplay('valXB', this.value + '%'); triggerUpdate()">
+            
+            <label>Vertikaler Versatz (Y) <span class="val-display" id="valYB">0%</span></label>
+            <input type="range" id="offsetYB" min="-100" max="100" value="0" oninput="updateValDisplay('valYB', this.value + '%'); triggerUpdate()">
         </div>
 
         <!-- BILD C -->
@@ -159,9 +175,14 @@ button{
             <label style="font-weight:bold; font-size:14px;">Optional Bild C</label>
             <input type="file" id="imgC" accept="image/*" onchange="triggerUpdate()">
             
-            <label>Horizontaler / Vertikaler Versatz</label>
-            <input type="range" id="offsetXC" min="-100" max="100" value="0" oninput="triggerUpdate()">
-            <input type="range" id="offsetYC" min="-100" max="100" value="0" oninput="triggerUpdate()">
+            <label>Zoom / Skalierung <span class="val-display" id="valScaleC">100%</span></label>
+            <input type="range" id="scaleC" min="10" max="300" value="100" oninput="updateValDisplay('valScaleC', this.value + '%'); triggerUpdate()">
+
+            <label>Horizontaler Versatz (X) <span class="val-display" id="valXC">0%</span></label>
+            <input type="range" id="offsetXC" min="-100" max="100" value="0" oninput="updateValDisplay('valXC', this.value + '%'); triggerUpdate()">
+            
+            <label>Vertikaler Versatz (Y) <span class="val-display" id="valYC">0%</span></label>
+            <input type="range" id="offsetYC" min="-100" max="100" value="0" oninput="updateValDisplay('valYC', this.value + '%'); triggerUpdate()">
         </div>
 
         <hr>
@@ -250,6 +271,10 @@ button{
 let loadedImages = { imgA: null, imgB: null, imgC: null };
 let isSimulating = false;
 
+function updateValDisplay(id, text) {
+    document.getElementById(id).innerText = text;
+}
+
 function mmToPx(mm, dpi) {
     return Math.round(mm * dpi / 25.4);
 }
@@ -268,23 +293,34 @@ function loadImage(file) {
     });
 }
 
-function cropInfo(img, targetW, targetH, percentOffsetX, percentOffsetY) {
+function cropInfo(img, targetW, targetH, percentOffsetX, percentOffsetY, scalePercent) {
     const srcRatio = img.width / img.height;
     const dstRatio = targetW / targetH;
 
-    let sx = 0, sy = 0, sw = img.width, sh = img.height;
+    let baseSW = img.width;
+    let baseSH = img.height;
 
     if (srcRatio > dstRatio) {
-        sw = img.height * dstRatio;
-        sx = (img.width - sw) / 2;
-        const maxShiftX = (img.width - sw) / 2;
-        sx += maxShiftX * (percentOffsetX / 100);
+        baseSW = img.height * dstRatio;
     } else {
-        sh = img.width / dstRatio;
-        sy = (img.height - sh) / 2;
-        const maxShiftY = (img.height - sh) / 2;
-        sy += maxShiftY * (percentOffsetY / 100);
+        baseSH = img.width / dstRatio;
     }
+
+    // Skalierung anwenden (100% = Standard, >100% = Heranzoomen, <100% = Herauszoomen)
+    const scaleFactor = (scalePercent || 100) / 100;
+    let sw = baseSW / scaleFactor;
+    let sh = baseSH / scaleFactor;
+
+    // Zentrieren
+    let sx = (img.width - sw) / 2;
+    let sy = (img.height - sh) / 2;
+
+    // Versatz anwenden basierend auf verbleibendem Spielraum
+    const maxShiftX = Math.abs(img.width - sw) / 2;
+    const maxShiftY = Math.abs(img.height - sh) / 2;
+
+    sx += maxShiftX * (percentOffsetX / 100);
+    sy += maxShiftY * (percentOffsetY / 100);
 
     return { sx, sy, sw, sh };
 }
@@ -341,11 +377,20 @@ function generate() {
     const infoDiv = document.getElementById("info");
     
     const imgs = [];
-    const offsets = [];
+    const params = [];
     
-    if (loadedImages.imgA) { imgs.push(loadedImages.imgA); offsets.push({x: parseFloat(offsetXA.value), y: parseFloat(offsetYA.value)}); }
-    if (loadedImages.imgB) { imgs.push(loadedImages.imgB); offsets.push({x: parseFloat(offsetXB.value), y: parseFloat(offsetYB.value)}); }
-    if (loadedImages.imgC) { imgs.push(loadedImages.imgC); offsets.push({x: parseFloat(offsetXC.value), y: parseFloat(offsetYC.value)}); }
+    if (loadedImages.imgA) { 
+        imgs.push(loadedImages.imgA); 
+        params.push({x: parseFloat(offsetXA.value), y: parseFloat(offsetYA.value), scale: parseFloat(scaleA.value)}); 
+    }
+    if (loadedImages.imgB) { 
+        imgs.push(loadedImages.imgB); 
+        params.push({x: parseFloat(offsetXB.value), y: parseFloat(offsetYB.value), scale: parseFloat(scaleB.value)}); 
+    }
+    if (loadedImages.imgC) { 
+        imgs.push(loadedImages.imgC); 
+        params.push({x: parseFloat(offsetXC.value), y: parseFloat(offsetYC.value), scale: parseFloat(scaleC.value)}); 
+    }
 
     if (imgs.length < 2) {
         infoDiv.innerHTML = "Bitte wähle mindestens Bild A und Bild B aus.";
@@ -384,11 +429,11 @@ function generate() {
     const orientation = document.getElementById("orientation").value;
     const L = imgs.length;
 
-    // 1. Bildstreifen zuschneiden und lückenlos stauchen (Kompression statt Informationsverlust)
+    // 1. Bildstreifen zuschneiden und lückenlos stauchen (inkl. individueller Skalierung)
     for (let i = 0; i < strips; i++) {
         const imgIndex = i % L;
         const img = imgs[imgIndex];
-        const off = offsets[imgIndex];
+        const p = params[imgIndex];
         
         let totalSlicesForImg = 0;
         for (let k = 0; k < strips; k++) {
@@ -396,7 +441,7 @@ function generate() {
         }
         
         const sliceIndex = Math.floor(i / L);
-        const c = cropInfo(img, imgWidth, imgHeight, off.x, off.y);
+        const c = cropInfo(img, imgWidth, imgHeight, p.x, p.y, p.scale);
 
         if (orientation === "vertical") {
             const sw = c.sw / totalSlicesForImg;
@@ -434,7 +479,7 @@ function generate() {
         }
     }
 
-    infoDiv.innerHTML = `<strong>Druckbild bereit!</strong><br>Bildgröße: ${imgWidth} × ${imgHeight} px<br>Gesamtgröße (inkl. Rand): ${totalWidth} × ${totalHeight} px<br>Streifen: ${strips}<br><em>Hinweis: 100% der Bildinformationen sind enthalten.</em>`;
+    infoDiv.innerHTML = `<strong>Druckbild bereit!</strong><br>Bildgröße: ${imgWidth} × ${imgHeight} px<br>Gesamtgröße (inkl. Rand): ${totalWidth} × ${totalHeight} px<br>Streifen: ${strips}<br><em>Hinweis: Inklusive individueller Zoom- & Ausschnittsteuerung.</em>`;
 }
 
 function simulateView() {
@@ -484,24 +529,23 @@ function simulateView() {
         }
     }
 
-    const offsets = [];
-    if (loadedImages.imgA) offsets.push({x: parseFloat(offsetXA.value), y: parseFloat(offsetYA.value)});
-    if (loadedImages.imgB) offsets.push({x: parseFloat(offsetXB.value), y: parseFloat(offsetYB.value)});
-    if (loadedImages.imgC) offsets.push({x: parseFloat(offsetXC.value), y: parseFloat(offsetYC.value)});
+    const params = [];
+    if (loadedImages.imgA) params.push({x: parseFloat(offsetXA.value), y: parseFloat(offsetYA.value), scale: parseFloat(scaleA.value)});
+    if (loadedImages.imgB) params.push({x: parseFloat(offsetXB.value), y: parseFloat(offsetYB.value), scale: parseFloat(scaleB.value)});
+    if (loadedImages.imgC) params.push({x: parseFloat(offsetXC.value), y: parseFloat(offsetYC.value), scale: parseFloat(scaleC.value)});
 
     ctx.globalAlpha = 1 - weight;
-    const cA = cropInfo(imgs[imgIndexA], imgWidth, imgHeight, offsets[imgIndexA].x, offsets[imgIndexA].y);
+    const cA = cropInfo(imgs[imgIndexA], imgWidth, imgHeight, params[imgIndexA].x, params[imgIndexA].y, params[imgIndexA].scale);
     ctx.drawImage(imgs[imgIndexA], cA.sx, cA.sy, cA.sw, cA.sh, marginPx, marginPx, imgWidth, imgHeight);
 
     ctx.globalAlpha = weight;
-    const cB = cropInfo(imgs[imgIndexB], imgWidth, imgHeight, offsets[imgIndexB].x, offsets[imgIndexB].y);
+    const cB = cropInfo(imgs[imgIndexB], imgWidth, imgHeight, params[imgIndexB].x, params[imgIndexB].y, params[imgIndexB].scale);
     ctx.drawImage(imgs[imgIndexB], cB.sx, cB.sy, cB.sw, cB.sh, marginPx, marginPx, imgWidth, imgHeight);
 
     ctx.globalAlpha = 1.0; 
     document.getElementById("info").innerHTML = "<em>Vorschau-Simulation aktiv (Entfaltete Perspektive)</em>";
 }
 
-// NEUE IPAD / SAFARI-SICHERE DOWNLOAD-FUNKTION
 function downloadImage() {
     resetToStrips();
     const canvas = document.getElementById("canvas");
