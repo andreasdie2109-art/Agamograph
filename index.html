@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Wechselbild App Pro – Natürlicher Zoom & Versatz</title>
+<title>Wechselbild App Pro – Exakter Versatz & Zoom</title>
 
 <style>
 body{
@@ -146,13 +146,13 @@ button{
             <input type="file" id="imgA" accept="image/*" onchange="triggerUpdate()">
             
             <label>Zoom <span class="val-display" id="valScaleA">100%</span></label>
-            <input type="range" id="scaleA" min="100" max="400" value="100" oninput="updateValDisplay('valScaleA', this.value + '%'); triggerUpdate()">
+            <input type="range" id="scaleA" min="10" max="300" value="100" oninput="updateValDisplay('valScaleA', this.value + '%'); triggerUpdate()">
 
-            <label>Horizontaler Versatz (X) <span class="val-display" id="valXA">0 px</span></label>
-            <input type="range" id="offsetXA" min="-500" max="500" value="0" oninput="updateValDisplay('valXA', this.value + ' px'); triggerUpdate()">
+            <label>Horizontaler Versatz (X) <span class="val-display" id="valXA">0%</span></label>
+            <input type="range" id="offsetXA" min="-100" max="100" value="0" oninput="updateValDisplay('valXA', this.value + '%'); triggerUpdate()">
             
-            <label>Vertikaler Versatz (Y) <span class="val-display" id="valYA">0 px</span></label>
-            <input type="range" id="offsetYA" min="-500" max="500" value="0" oninput="updateValDisplay('valYA', this.value + ' px'); triggerUpdate()">
+            <label>Vertikaler Versatz (Y) <span class="val-display" id="valYA">0%</span></label>
+            <input type="range" id="offsetYA" min="-100" max="100" value="0" oninput="updateValDisplay('valYA', this.value + '%'); triggerUpdate()">
         </div>
 
         <!-- BILD B -->
@@ -161,13 +161,13 @@ button{
             <input type="file" id="imgB" accept="image/*" onchange="triggerUpdate()">
             
             <label>Zoom <span class="val-display" id="valScaleB">100%</span></label>
-            <input type="range" id="scaleB" min="100" max="400" value="100" oninput="updateValDisplay('valScaleB', this.value + '%'); triggerUpdate()">
+            <input type="range" id="scaleB" min="10" max="300" value="100" oninput="updateValDisplay('valScaleB', this.value + '%'); triggerUpdate()">
 
-            <label>Horizontaler Versatz (X) <span class="val-display" id="valXB">0 px</span></label>
-            <input type="range" id="offsetXB" min="-500" max="500" value="0" oninput="updateValDisplay('valXB', this.value + ' px'); triggerUpdate()">
+            <label>Horizontaler Versatz (X) <span class="val-display" id="valXB">0%</span></label>
+            <input type="range" id="offsetXB" min="-100" max="100" value="0" oninput="updateValDisplay('valXB', this.value + '%'); triggerUpdate()">
             
-            <label>Vertikaler Versatz (Y) <span class="val-display" id="valYB">0 px</span></label>
-            <input type="range" id="offsetYB" min="-500" max="500" value="0" oninput="updateValDisplay('valYB', this.value + ' px'); triggerUpdate()">
+            <label>Vertikaler Versatz (Y) <span class="val-display" id="valYB">0%</span></label>
+            <input type="range" id="offsetYB" min="-100" max="100" value="0" oninput="updateValDisplay('valYB', this.value + '%'); triggerUpdate()">
         </div>
 
         <!-- BILD C -->
@@ -176,13 +176,13 @@ button{
             <input type="file" id="imgC" accept="image/*" onchange="triggerUpdate()">
             
             <label>Zoom <span class="val-display" id="valScaleC">100%</span></label>
-            <input type="range" id="scaleC" min="100" max="400" value="100" oninput="updateValDisplay('valScaleC', this.value + '%'); triggerUpdate()">
+            <input type="range" id="scaleC" min="10" max="300" value="100" oninput="updateValDisplay('valScaleC', this.value + '%'); triggerUpdate()">
 
-            <label>Horizontaler Versatz (X) <span class="val-display" id="valXC">0 px</span></label>
-            <input type="range" id="offsetXC" min="-500" max="500" value="0" oninput="updateValDisplay('valXC', this.value + ' px'); triggerUpdate()">
+            <label>Horizontaler Versatz (X) <span class="val-display" id="valXC">0%</span></label>
+            <input type="range" id="offsetXC" min="-100" max="100" value="0" oninput="updateValDisplay('valXC', this.value + '%'); triggerUpdate()">
             
-            <label>Vertikaler Versatz (Y) <span class="val-display" id="valYC">0 px</span></label>
-            <input type="range" id="offsetYC" min="-500" max="500" value="0" oninput="updateValDisplay('valYC', this.value + ' px'); triggerUpdate()">
+            <label>Vertikaler Versatz (Y) <span class="val-display" id="valYC">0%</span></label>
+            <input type="range" id="offsetYC" min="-100" max="100" value="0" oninput="updateValDisplay('valYC', this.value + '%'); triggerUpdate()">
         </div>
 
         <hr>
@@ -293,39 +293,37 @@ function loadImage(file) {
 }
 
 /**
- * Natürliches Foto-Crop System (Proportionaler Center-Zoom mit absolutem Versatz)
+ * Exakte Positionsberechnung ohne Achsen-Stauchung
  */
-function getSourceCrop(img, targetW, targetH, zoomPercent, pxOffsetX, pxOffsetY) {
-    const zoom = Math.max(1, zoomPercent / 100);
+function getDrawGeometry(img, targetW, targetH, zoomPercent, percentOffsetX, percentOffsetY) {
+    const scale = (zoomPercent || 100) / 100;
     
-    // Basis-Cover-Verhältnis berechnen
+    // Proportionale Anpassung (Cover)
     const imgRatio = img.width / img.height;
     const targetRatio = targetW / targetH;
     
-    let baseWidth, baseHeight;
-
+    let baseW, baseH;
     if (imgRatio > targetRatio) {
-        baseHeight = img.height;
-        baseWidth = img.height * targetRatio;
+        baseH = targetH;
+        baseW = targetH * imgRatio;
     } else {
-        baseWidth = img.width;
-        baseHeight = img.width / targetRatio;
+        baseW = targetW;
+        baseH = targetW / imgRatio;
     }
 
-    // Proportionaler Zoom ausgehend von der Basis
-    const sw = baseWidth / zoom;
-    const sh = baseHeight / zoom;
+    // Proportionaler Zoom
+    const drawW = baseW * scale;
+    const drawH = baseH * scale;
 
-    // Zentrierung auf dem Bild
-    let sx = (img.width - sw) / 2;
-    let sy = (img.height - sh) / 2;
+    // Basis-Zentrierung auf dem Canvas-Abschnitt
+    let drawX = (targetW - drawW) / 2;
+    let drawY = (targetH - drawH) / 2;
 
-    // Exakter Pixel-Versatz (wird proportional zur Bildauflösung angewandt)
-    const scaleFactor = img.width / targetW;
-    sx -= (pxOffsetX * scaleFactor);
-    sy -= (pxOffsetY * scaleFactor);
+    // Linearer Versatz proportional zur Zielgröße (ohne Stauchung der Streifen)
+    drawX += targetW * (percentOffsetX / 100);
+    drawY += targetH * (percentOffsetY / 100);
 
-    return { sx, sy, sw, sh };
+    return { drawX, drawY, drawW, drawH };
 }
 
 async function triggerUpdate() {
@@ -432,31 +430,30 @@ function generate() {
     const orientation = document.getElementById("orientation").value;
     const L = imgs.length;
 
-    // Natürliches Render-Muster
+    // Präzise Maskierung (verhindert Skalierungsverzerrung bei X/Y-Versatz)
     for (let i = 0; i < strips; i++) {
         const imgIndex = i % L;
         const img = imgs[imgIndex];
         const p = params[imgIndex];
-        
-        let totalSlicesForImg = 0;
-        for (let k = 0; k < strips; k++) {
-            if (k % L === imgIndex) totalSlicesForImg++;
-        }
-        
-        const sliceIndex = Math.floor(i / L);
-        const crop = getSourceCrop(img, imgWidth, imgHeight, p.scale, p.x, p.y);
+
+        ctx.save();
+        ctx.beginPath();
 
         if (orientation === "vertical") {
-            const sw = crop.sw / totalSlicesForImg;
             const dw = imgWidth / strips;
-            const sx = crop.sx + (sliceIndex * sw);
-            ctx.drawImage(img, sx, crop.sy, sw, crop.sh, marginPx + (i * dw), marginPx, dw, imgHeight);
+            ctx.rect(marginPx + i * dw, marginPx, dw, imgHeight);
         } else {
-            const sh = crop.sh / totalSlicesForImg;
             const dh = imgHeight / strips;
-            const sy = crop.sy + (sliceIndex * sh);
-            ctx.drawImage(img, crop.sx, sy, crop.sw, sh, marginPx, marginPx + (i * dh), imgWidth, dh);
+            ctx.rect(marginPx, marginPx + i * dh, imgWidth, dh);
         }
+
+        ctx.clip();
+
+        // Zeichnet das ungeschnittene, unverzerrte Bild exakt an die Zielposition
+        const geo = getDrawGeometry(img, imgWidth, imgHeight, p.scale, p.x, p.y);
+        ctx.drawImage(img, marginPx + geo.drawX, marginPx + geo.drawY, geo.drawW, geo.drawH);
+
+        ctx.restore();
     }
 
     // Passmarken
@@ -545,12 +542,12 @@ function simulateView() {
     ctx.clip();
 
     ctx.globalAlpha = 1 - weight;
-    const cropA = getSourceCrop(imgs[imgIndexA], imgWidth, imgHeight, params[imgIndexA].scale, params[imgIndexA].x, params[imgIndexA].y);
-    ctx.drawImage(imgs[imgIndexA], cropA.sx, cropA.sy, cropA.sw, cropA.sh, marginPx, marginPx, imgWidth, imgHeight);
+    const geoA = getDrawGeometry(imgs[imgIndexA], imgWidth, imgHeight, params[imgIndexA].scale, params[imgIndexA].x, params[imgIndexA].y);
+    ctx.drawImage(imgs[imgIndexA], marginPx + geoA.drawX, marginPx + geoA.drawY, geoA.drawW, geoA.drawH);
 
     ctx.globalAlpha = weight;
-    const cropB = getSourceCrop(imgs[imgIndexB], imgWidth, imgHeight, params[imgIndexB].scale, params[imgIndexB].x, params[imgIndexB].y);
-    ctx.drawImage(imgs[imgIndexB], cropB.sx, cropB.sy, cropB.sw, cropB.sh, marginPx, marginPx, imgWidth, imgHeight);
+    const geoB = getDrawGeometry(imgs[imgIndexB], imgWidth, imgHeight, params[imgIndexB].scale, params[imgIndexB].x, params[imgIndexB].y);
+    ctx.drawImage(imgs[imgIndexB], marginPx + geoB.drawX, marginPx + geoB.drawY, geoB.drawW, geoB.drawH);
 
     ctx.restore();
     ctx.globalAlpha = 1.0; 
