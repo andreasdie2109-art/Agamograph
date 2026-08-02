@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Wechselbild App Pro – Volle Bildinformation</title>
+<title>Wechselbild App Pro – Volle Bildinfo & iPad Download-Fix</title>
 
 <style>
 body{
@@ -128,11 +128,13 @@ button{
 
 <body>
 
-<h1>Wechselbild App Pro (100% Bildinfo-Erhalt)</h1>
+<h1>Wechselbild App Pro (iPad Fix)</h1>
 
 <div class="container">
+    <!-- EINSTELLUNGEN -->
     <div class="panel">
         
+        <!-- BILD A -->
         <div class="control-block control-block-A">
             <label style="font-weight:bold; font-size:14px;">Bild A</label>
             <input type="file" id="imgA" accept="image/*" onchange="triggerUpdate()">
@@ -142,6 +144,7 @@ button{
             <input type="range" id="offsetYA" min="-100" max="100" value="0" oninput="triggerUpdate()">
         </div>
 
+        <!-- BILD B -->
         <div class="control-block control-block-B">
             <label style="font-weight:bold; font-size:14px;">Bild B</label>
             <input type="file" id="imgB" accept="image/*" onchange="triggerUpdate()">
@@ -151,6 +154,7 @@ button{
             <input type="range" id="offsetYB" min="-100" max="100" value="0" oninput="triggerUpdate()">
         </div>
 
+        <!-- BILD C -->
         <div class="control-block control-block-C">
             <label style="font-weight:bold; font-size:14px;">Optional Bild C</label>
             <input type="file" id="imgC" accept="image/*" onchange="triggerUpdate()">
@@ -187,6 +191,7 @@ button{
 
         <hr>
         
+        <!-- RAND-OPTIONEN -->
         <label>Breite Rand rundherum (mm)</label>
         <input type="number" id="marginMM" value="10" min="0" onchange="triggerUpdate()">
 
@@ -225,6 +230,7 @@ button{
         <button class="btn-primary" onclick="downloadImage()">Druckbild herunterladen</button>
     </div>
 
+    <!-- VORSCHAU UND SIMULATOR -->
     <div class="preview-panel">
         <h2>Ausgabe & Simulation</h2>
         <div id="info">Bitte Bilder auswählen.</div>
@@ -384,19 +390,15 @@ function generate() {
         const img = imgs[imgIndex];
         const off = offsets[imgIndex];
         
-        // Berechne, wie viele Streifen dieses spezifische Bild im gesamten Raster bekommt
         let totalSlicesForImg = 0;
         for (let k = 0; k < strips; k++) {
             if (k % L === imgIndex) totalSlicesForImg++;
         }
         
-        // Welcher Streifen dieses Bildes ist der aktuelle?
         const sliceIndex = Math.floor(i / L);
-        
         const c = cropInfo(img, imgWidth, imgHeight, off.x, off.y);
 
         if (orientation === "vertical") {
-            // sw tastet das Quellbild nun in exakt gleichmäßig gestauchten Schritten von 0 bis 100% ab
             const sw = c.sw / totalSlicesForImg;
             const dw = imgWidth / strips;
             ctx.drawImage(img, c.sx + sliceIndex * sw, c.sy, sw, c.sh, marginPx + i * dw, marginPx, dw, imgHeight);
@@ -432,7 +434,7 @@ function generate() {
         }
     }
 
-    infoDiv.innerHTML = `<strong>Druckbild bereit!</strong><br>Bildgröße: ${imgWidth} × ${imgHeight} px<br>Gesamtgröße (inkl. Rand): ${totalWidth} × ${totalHeight} px<br>Streifen: ${strips}<br><em>Hinweis: 100% der Bildinformationen sind in die Streifen komprimiert.</em>`;
+    infoDiv.innerHTML = `<strong>Druckbild bereit!</strong><br>Bildgröße: ${imgWidth} × ${imgHeight} px<br>Gesamtgröße (inkl. Rand): ${totalWidth} × ${totalHeight} px<br>Streifen: ${strips}<br><em>Hinweis: 100% der Bildinformationen sind enthalten.</em>`;
 }
 
 function simulateView() {
@@ -487,7 +489,6 @@ function simulateView() {
     if (loadedImages.imgB) offsets.push({x: parseFloat(offsetXB.value), y: parseFloat(offsetYB.value)});
     if (loadedImages.imgC) offsets.push({x: parseFloat(offsetXC.value), y: parseFloat(offsetYC.value)});
 
-    // Der Simulator zeigt das optisch entfaltete (korrekte) Bild an
     ctx.globalAlpha = 1 - weight;
     const cA = cropInfo(imgs[imgIndexA], imgWidth, imgHeight, offsets[imgIndexA].x, offsets[imgIndexA].y);
     ctx.drawImage(imgs[imgIndexA], cA.sx, cA.sy, cA.sw, cA.sh, marginPx, marginPx, imgWidth, imgHeight);
@@ -499,29 +500,36 @@ function simulateView() {
     ctx.globalAlpha = 1.0; 
     document.getElementById("info").innerHTML = "<em>Vorschau-Simulation aktiv (Entfaltete Perspektive)</em>";
 }
+
+// NEUE IPAD / SAFARI-SICHERE DOWNLOAD-FUNKTION
 function downloadImage() {
     resetToStrips();
     const canvas = document.getElementById("canvas");
     const type = document.getElementById("exportType").value;
-    
-    // Konvertiert das Bild für iOS/Safari verträglich
+    const suffix = document.getElementById("usePassmarks").checked ? "_mit_marken" : "_pur";
+    const filename = "wechselbild" + suffix + (type === "image/png" ? ".png" : ".jpg");
+
     canvas.toBlob(function(blob) {
         if (!blob) {
-            alert("Das Bild ist zu groß für den Speicher des iPads. Bitte reduziere die DPI auf 150 oder 300.");
+            alert("Fehler beim Erstellen der Datei. Bitte reduziere ggf. die DPI-Einstellung.");
             return;
         }
-        const url = URL.createObjectURL(blob);
         
-        // Öffnet das Bild in einem neuen Tab für einwandfreien iOS-Download
-        const newTab = window.open(url, '_blank');
-        if (!newTab) {
-            // Falls Pop-ups blockiert sind, als gewohnter Download
-            const a = document.createElement("a");
-            const suffix = document.getElementById("usePassmarks").checked ? "_mit_marken" : "_pur";
-            a.href = url;
-            a.download = "wechselbild_komprimiert" + suffix + (type === "image/png" ? ".png" : ".jpg");
-            a.click();
-        }
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        a.download = filename;
+        
+        document.body.appendChild(a);
+        a.click();
+        
+        setTimeout(() => {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(blobUrl);
+        }, 150);
     }, type, 0.95);
 }
+</script>
 
+</body>
+</html>
