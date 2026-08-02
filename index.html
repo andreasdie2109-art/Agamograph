@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Wechselbild App Pro – Volle Bildinfo & Skalierung</title>
+<title>Wechselbild App Pro – Korrigierter Versatz & Proportionale Skalierung</title>
 
 <style>
 body{
@@ -134,7 +134,7 @@ button{
 
 <body>
 
-<h1>Wechselbild App Pro (inkl. Einzelbild-Skalierung)</h1>
+<h1>Wechselbild App Pro</h1>
 
 <div class="container">
     <!-- EINSTELLUNGEN -->
@@ -145,7 +145,7 @@ button{
             <label style="font-weight:bold; font-size:14px;">Bild A</label>
             <input type="file" id="imgA" accept="image/*" onchange="triggerUpdate()">
             
-            <label>Zoom / Skalierung <span class="val-display" id="valScaleA">100%</span></label>
+            <label>Proportionale Skalierung <span class="val-display" id="valScaleA">100%</span></label>
             <input type="range" id="scaleA" min="10" max="300" value="100" oninput="updateValDisplay('valScaleA', this.value + '%'); triggerUpdate()">
 
             <label>Horizontaler Versatz (X) <span class="val-display" id="valXA">0%</span></label>
@@ -160,7 +160,7 @@ button{
             <label style="font-weight:bold; font-size:14px;">Bild B</label>
             <input type="file" id="imgB" accept="image/*" onchange="triggerUpdate()">
             
-            <label>Zoom / Skalierung <span class="val-display" id="valScaleB">100%</span></label>
+            <label>Proportionale Skalierung <span class="val-display" id="valScaleB">100%</span></label>
             <input type="range" id="scaleB" min="10" max="300" value="100" oninput="updateValDisplay('valScaleB', this.value + '%'); triggerUpdate()">
 
             <label>Horizontaler Versatz (X) <span class="val-display" id="valXB">0%</span></label>
@@ -175,7 +175,7 @@ button{
             <label style="font-weight:bold; font-size:14px;">Optional Bild C</label>
             <input type="file" id="imgC" accept="image/*" onchange="triggerUpdate()">
             
-            <label>Zoom / Skalierung <span class="val-display" id="valScaleC">100%</span></label>
+            <label>Proportionale Skalierung <span class="val-display" id="valScaleC">100%</span></label>
             <input type="range" id="scaleC" min="10" max="300" value="100" oninput="updateValDisplay('valScaleC', this.value + '%'); triggerUpdate()">
 
             <label>Horizontaler Versatz (X) <span class="val-display" id="valXC">0%</span></label>
@@ -293,6 +293,7 @@ function loadImage(file) {
     });
 }
 
+// Korrigierte Zuschnitts- und Skalierungsberechnung
 function cropInfo(img, targetW, targetH, percentOffsetX, percentOffsetY, scalePercent) {
     const srcRatio = img.width / img.height;
     const dstRatio = targetW / targetH;
@@ -300,27 +301,29 @@ function cropInfo(img, targetW, targetH, percentOffsetX, percentOffsetY, scalePe
     let baseSW = img.width;
     let baseSH = img.height;
 
+    // Basis-Fitting (Cover): Proportionen wahren
     if (srcRatio > dstRatio) {
         baseSW = img.height * dstRatio;
     } else {
         baseSH = img.width / dstRatio;
     }
 
-    // Skalierung anwenden (100% = Standard, >100% = Heranzoomen, <100% = Herauszoomen)
+    // Exakt proportionale Skalierung (Zoom)
     const scaleFactor = (scalePercent || 100) / 100;
     let sw = baseSW / scaleFactor;
     let sh = baseSH / scaleFactor;
 
-    // Zentrieren
+    // Standard-Zentrierung
     let sx = (img.width - sw) / 2;
     let sy = (img.height - sh) / 2;
 
-    // Versatz anwenden basierend auf verbleibendem Spielraum
-    const maxShiftX = Math.abs(img.width - sw) / 2;
-    const maxShiftY = Math.abs(img.height - sh) / 2;
+    // Korrigierter horizontaler und vertikaler Versatz:
+    // Der Spielraum berechnet sich nun flexibel über die verbleibende Breite/Höhe des Bildes
+    const maxShiftX = Math.max(0, (img.width - sw) / 2) + (sw > img.width ? (sw - img.width) / 2 : 0);
+    const maxShiftY = Math.max(0, (img.height - sh) / 2) + (sh > img.height ? (sh - img.height) / 2 : 0);
 
-    sx += maxShiftX * (percentOffsetX / 100);
-    sy += maxShiftY * (percentOffsetY / 100);
+    sx += (maxShiftX * (percentOffsetX / 100));
+    sy += (maxShiftY * (percentOffsetY / 100));
 
     return { sx, sy, sw, sh };
 }
@@ -429,7 +432,7 @@ function generate() {
     const orientation = document.getElementById("orientation").value;
     const L = imgs.length;
 
-    // 1. Bildstreifen zuschneiden und lückenlos stauchen (inkl. individueller Skalierung)
+    // Bildstreifen zuschneiden und lückenlos stauchen
     for (let i = 0; i < strips; i++) {
         const imgIndex = i % L;
         const img = imgs[imgIndex];
@@ -454,7 +457,7 @@ function generate() {
         }
     }
 
-    // 2. Optionale Passmarken
+    // Passmarken zeichnen
     if (usePassmarks && marginPx > 0) {
         ctx.strokeStyle = "#000000";
         ctx.lineWidth = Math.max(1, Math.round(dpi / 300));
@@ -479,7 +482,7 @@ function generate() {
         }
     }
 
-    infoDiv.innerHTML = `<strong>Druckbild bereit!</strong><br>Bildgröße: ${imgWidth} × ${imgHeight} px<br>Gesamtgröße (inkl. Rand): ${totalWidth} × ${totalHeight} px<br>Streifen: ${strips}<br><em>Hinweis: Inklusive individueller Zoom- & Ausschnittsteuerung.</em>`;
+    infoDiv.innerHTML = `<strong>Druckbild bereit!</strong><br>Bildgröße: ${imgWidth} × ${imgHeight} px<br>Gesamtgröße (inkl. Rand): ${totalWidth} × ${totalHeight} px<br>Streifen: ${strips}<br><em>Hinweis: Inklusive proportionaler Zoom- & korrigierter Versatzsteuerung.</em>`;
 }
 
 function simulateView() {
