@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Wechselbild App Pro – Korrigierter Versatz & Proportionale Skalierung</title>
+<title>Wechselbild App Pro – Proportional & Korrigiert</title>
 
 <style>
 body{
@@ -293,37 +293,25 @@ function loadImage(file) {
     });
 }
 
-// Korrigierte Zuschnitts- und Skalierungsberechnung
-function cropInfo(img, targetW, targetH, percentOffsetX, percentOffsetY, scalePercent) {
-    const srcRatio = img.width / img.height;
-    const dstRatio = targetW / targetH;
+// Berechnet den exakten Ausschnitt unter strikter Einhaltung der Proportionen
+function getProportionalCrop(img, scalePercent, percentOffsetX, percentOffsetY) {
+    // Zoom-Faktor: 100% = Normal, >100% = Vergrößert
+    const scale = (scalePercent || 100) / 100;
+    
+    // Proportionale Quellausschnitt-Breite und -Höhe
+    const sw = img.width / scale;
+    const sh = img.height / scale;
 
-    let baseSW = img.width;
-    let baseSH = img.height;
-
-    // Basis-Fitting (Cover): Proportionen wahren
-    if (srcRatio > dstRatio) {
-        baseSW = img.height * dstRatio;
-    } else {
-        baseSH = img.width / dstRatio;
-    }
-
-    // Exakt proportionale Skalierung (Zoom)
-    const scaleFactor = (scalePercent || 100) / 100;
-    let sw = baseSW / scaleFactor;
-    let sh = baseSH / scaleFactor;
-
-    // Standard-Zentrierung
+    // Basis-Zentrierung
     let sx = (img.width - sw) / 2;
     let sy = (img.height - sh) / 2;
 
-    // Korrigierter horizontaler und vertikaler Versatz:
-    // Der Spielraum berechnet sich nun flexibel über die verbleibende Breite/Höhe des Bildes
-    const maxShiftX = Math.max(0, (img.width - sw) / 2) + (sw > img.width ? (sw - img.width) / 2 : 0);
-    const maxShiftY = Math.max(0, (img.height - sh) / 2) + (sh > img.height ? (sh - img.height) / 2 : 0);
+    // Direkter, stufenloser horizontaler & vertikaler Versatz
+    const shiftRangeX = img.width * 0.5;
+    const shiftRangeY = img.height * 0.5;
 
-    sx += (maxShiftX * (percentOffsetX / 100));
-    sy += (maxShiftY * (percentOffsetY / 100));
+    sx += (shiftRangeX * (percentOffsetX / 100));
+    sy += (shiftRangeY * (percentOffsetY / 100));
 
     return { sx, sy, sw, sh };
 }
@@ -337,6 +325,13 @@ async function triggerUpdate() {
         if (inputA && (!loadedImages.imgA || loadedImages.imgA._file !== inputA)) {
             loadedImages.imgA = await loadImage(inputA);
             loadedImages.imgA._file = inputA;
+            
+            // Format automatisch proportional an Bild A anpassen, falls nicht manuell gewählt
+            if (document.getElementById("preset").value === "custom") {
+                const ratio = loadedImages.imgA.height / loadedImages.imgA.width;
+                const wMM = parseFloat(document.getElementById("widthMM").value);
+                document.getElementById("heightMM").value = (wMM * ratio).toFixed(1);
+            }
         }
         if (inputB && (!loadedImages.imgB || loadedImages.imgB._file !== inputB)) {
             loadedImages.imgB = await loadImage(inputB);
@@ -432,7 +427,7 @@ function generate() {
     const orientation = document.getElementById("orientation").value;
     const L = imgs.length;
 
-    // Bildstreifen zuschneiden und lückenlos stauchen
+    // Bildstreifen zuschneiden und einfügen
     for (let i = 0; i < strips; i++) {
         const imgIndex = i % L;
         const img = imgs[imgIndex];
@@ -444,20 +439,20 @@ function generate() {
         }
         
         const sliceIndex = Math.floor(i / L);
-        const c = cropInfo(img, imgWidth, imgHeight, p.x, p.y, p.scale);
+        const crop = getProportionalCrop(img, p.scale, p.x, p.y);
 
         if (orientation === "vertical") {
-            const sw = c.sw / totalSlicesForImg;
+            const sw = crop.sw / totalSlicesForImg;
             const dw = imgWidth / strips;
-            ctx.drawImage(img, c.sx + sliceIndex * sw, c.sy, sw, c.sh, marginPx + i * dw, marginPx, dw, imgHeight);
+            ctx.drawImage(img, crop.sx + sliceIndex * sw, crop.sy, sw, crop.sh, marginPx + i * dw, marginPx, dw, imgHeight);
         } else {
-            const sh = c.sh / totalSlicesForImg;
+            const sh = crop.sh / totalSlicesForImg;
             const dh = imgHeight / strips;
-            ctx.drawImage(img, c.sx, c.sy + sliceIndex * sh, c.sw, sh, marginPx, marginPx + i * dh, imgWidth, dh);
+            ctx.drawImage(img, crop.sx, crop.sy + sliceIndex * sh, crop.sw, sh, marginPx, marginPx + i * dh, imgWidth, dh);
         }
     }
 
-    // Passmarken zeichnen
+    // Passmarken
     if (usePassmarks && marginPx > 0) {
         ctx.strokeStyle = "#000000";
         ctx.lineWidth = Math.max(1, Math.round(dpi / 300));
@@ -482,7 +477,7 @@ function generate() {
         }
     }
 
-    infoDiv.innerHTML = `<strong>Druckbild bereit!</strong><br>Bildgröße: ${imgWidth} × ${imgHeight} px<br>Gesamtgröße (inkl. Rand): ${totalWidth} × ${totalHeight} px<br>Streifen: ${strips}<br><em>Hinweis: Inklusive proportionaler Zoom- & korrigierter Versatzsteuerung.</em>`;
+    infoDiv.innerHTML = `<strong>Druckbild bereit!</strong><br>Bildgröße: ${imgWidth} × ${imgHeight} px<br>Gesamtgröße (inkl. Rand): ${totalWidth} × ${totalHeight} px<br>Streifen: ${strips}`;
 }
 
 function simulateView() {
@@ -538,15 +533,15 @@ function simulateView() {
     if (loadedImages.imgC) params.push({x: parseFloat(offsetXC.value), y: parseFloat(offsetYC.value), scale: parseFloat(scaleC.value)});
 
     ctx.globalAlpha = 1 - weight;
-    const cA = cropInfo(imgs[imgIndexA], imgWidth, imgHeight, params[imgIndexA].x, params[imgIndexA].y, params[imgIndexA].scale);
+    const cA = getProportionalCrop(imgs[imgIndexA], params[imgIndexA].scale, params[imgIndexA].x, params[imgIndexA].y);
     ctx.drawImage(imgs[imgIndexA], cA.sx, cA.sy, cA.sw, cA.sh, marginPx, marginPx, imgWidth, imgHeight);
 
     ctx.globalAlpha = weight;
-    const cB = cropInfo(imgs[imgIndexB], imgWidth, imgHeight, params[imgIndexB].x, params[imgIndexB].y, params[imgIndexB].scale);
+    const cB = getProportionalCrop(imgs[imgIndexB], params[imgIndexB].scale, params[imgIndexB].x, params[imgIndexB].y);
     ctx.drawImage(imgs[imgIndexB], cB.sx, cB.sy, cB.sw, cB.sh, marginPx, marginPx, imgWidth, imgHeight);
 
     ctx.globalAlpha = 1.0; 
-    document.getElementById("info").innerHTML = "<em>Vorschau-Simulation aktiv (Entfaltete Perspektive)</em>";
+    document.getElementById("info").innerHTML = "<em>Vorschau-Simulation aktiv</em>";
 }
 
 function downloadImage() {
@@ -558,7 +553,7 @@ function downloadImage() {
 
     canvas.toBlob(function(blob) {
         if (!blob) {
-            alert("Fehler beim Erstellen der Datei. Bitte reduziere ggf. die DPI-Einstellung.");
+            alert("Fehler beim Erstellen der Datei.");
             return;
         }
         
