@@ -1,621 +1,366 @@
+
 <!DOCTYPE html>
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Wechselbild App Pro – Einheitliche Zielgröße</title>
+<title>Wechselbild App Lite 1.1</title>
 
 <style>
-body{
-    font-family:Arial,sans-serif;
-    max-width:1200px;
-    margin:auto;
-    padding:20px;
-    background: #f9f9f9;
+body {
+  font-family: Arial, sans-serif;
+  max-width: 800px;
+  margin: auto;
+  padding: 16px;
+  line-height: 1.5;
+  background: #f7f7f7;
 }
-.container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
-}
+h1 { font-size: 1.6em; }
 .panel {
-    flex: 1;
-    min-width: 320px;
+  background: white;
+  padding: 16px;
+  border-radius: 12px;
+  margin-bottom: 16px;
 }
-.preview-panel {
-    flex: 1.5;
-    min-width: 350px;
-    background: #fff;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+label { display: block; margin: 12px 0; }
+input, select, button {
+  box-sizing: border-box;
+  max-width: 100%;
+  padding: 10px;
+  font-size: 16px;
 }
-label{
-    display:block;
-    margin-top:10px;
-    font-weight: bold;
+input[type="number"], select { width: 100%; }
+input[type="file"] { width: 100%; }
+button {
+  width: 100%;
+  margin-top: 10px;
+  border: 0;
+  border-radius: 8px;
+  background: #174ea6;
+  color: white;
 }
-input, select {
-    display: block;
-    width: 100%;
-    max-width: 300px;
-    padding: 8px;
-    margin-top: 5px;
-    margin-bottom: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+button:disabled { opacity: .5; }
+#status { white-space: pre-line; }
+canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-top: 16px;
+  border: 1px solid #bbb;
+  background: white;
 }
-.control-block {
-    background: #f0f0f0;
-    padding: 12px;
-    margin-bottom: 15px;
-    border-radius: 4px;
-    max-width: 300px;
-    border-left: 4px solid #6c757d;
-}
-.control-block-A { border-left-color: #ffc107; }
-.control-block-B { border-left-color: #17a2b8; }
-.control-block-C { border-left-color: #28a745; }
-
-.control-block label {
-    font-size: 11px;
-    margin-top: 6px;
-    font-weight: normal;
-}
-.control-block input, .control-block select {
-    margin-bottom: 4px;
-}
-.checkbox-label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 14px !important;
-    font-weight: bold !important;
-    cursor: pointer;
-    margin-top: 15px;
-    margin-bottom: 15px;
-}
-.checkbox-label input {
-    width: auto;
-    margin: 0;
-}
-canvas{
-    max-width:100%;
-    border:2px dashed #bbb;
-    margin-top:20px;
-    background: #fff;
-    display: block;
-}
-button{
-    margin-top:15px;
-    padding:10px 20px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 16px;
-    font-weight: bold;
-    margin-right: 10px;
-}
-.btn-primary {
-    background-color: #28a745;
-    color: white;
-}
-.btn-primary:hover {
-    background-color: #218838;
-}
-.btn-secondary {
-    background-color: #007bff;
-    color: white;
-}
-.btn-secondary:hover {
-    background-color: #0056b3;
-}
-#info {
-    margin-top: 15px;
-    padding: 10px;
-    background: #e9ecef;
-    border-left: 5px solid #007bff;
-}
-.simulator-box {
-    margin-top: 20px;
-    background: #e2f0fe;
-    padding: 15px;
-    border-radius: 6px;
-    border: 1px solid #b8daff;
-}
-.val-display {
-    font-size: 11px;
-    font-weight: bold;
-    color: #333;
-    float: right;
-}
+.small { color: #555; font-size: .9em; }
 </style>
 </head>
 
 <body>
+<h1>Wechselbild Generator 1.1</h1>
+<p>Erstelle Wechselbilder aus zwei oder drei Fotos.</p>
 
-<h1>Wechselbild App Pro</h1>
+<div class="panel">
+  <h2>1. Bilder auswählen</h2>
+  <label>Bild A
+    <input type="file" id="imgA" accept="image/*">
+  </label>
+  <label>Bild B
+    <input type="file" id="imgB" accept="image/*">
+  </label>
+  <label>Bild C (optional)
+    <input type="file" id="imgC" accept="image/*">
+  </label>
+</div>
 
-<div class="container">
-    <!-- EINSTELLUNGEN -->
-    <div class="panel">
-        
-        <!-- BILD A -->
-        <div class="control-block control-block-A">
-            <label style="font-weight:bold; font-size:14px;">Bild A</label>
-            <input type="file" id="imgA" accept="image/*" onchange="triggerUpdate()">
-            
-            <label>Anpassung an Zielgröße</label>
-            <select id="fitA" onchange="triggerUpdate()">
-                <option value="cover" selected>Ausfüllen (Cover - Proportional)</option>
-                <option value="contain">Vollständig anzeigen (Contain)</option>
-                <option value="stretch">Verzerren / Strecken (Stretch)</option>
-            </select>
+<div class="panel">
+  <h2>2. Ausgabeformat</h2>
+  <label>Seitenverhältnis
+    <select id="preset">
+      <option value="custom">Benutzerdefiniert</option>
+      <option value="21:9">21:9</option>
+      <option value="16:9">16:9</option>
+      <option value="4:3">4:3</option>
+      <option value="3:2">3:2</option>
+      <option value="1:1">1:1</option>
+    </select>
+  </label>
+  <label>Breite (mm)
+    <input type="number" id="widthMM" value="210" min="1" step="0.1">
+  </label>
+  <label>Höhe (mm)
+    <input type="number" id="heightMM" value="90" min="1" step="0.1">
+  </label>
+  <label>Auflösung (DPI)
+    <select id="dpi">
+      <option value="150">150 DPI</option>
+      <option value="300" selected>300 DPI</option>
+      <option value="600">600 DPI</option>
+      <option value="1200">1200 DPI</option>
+    </select>
+  </label>
+  <p class="small">Bei einem festen Seitenverhältnis wird die Höhe anhand der Breite berechnet.</p>
+</div>
 
-            <label>Zoom <span class="val-display" id="valScaleA">100%</span></label>
-            <input type="range" id="scaleA" min="10" max="300" value="100" oninput="updateValDisplay('valScaleA', this.value + '%'); triggerUpdate()">
+<div class="panel">
+  <h2>3. Streifen einstellen</h2>
+  <label>Berechnung
+    <select id="mode">
+      <option value="count">Anzahl Streifen vorgeben</option>
+      <option value="width">Streifenbreite in mm vorgeben</option>
+    </select>
+  </label>
+  <label>Anzahl Streifen
+    <input type="number" id="stripCount" value="24" min="1" max="2000">
+  </label>
+  <label>Streifenbreite (mm)
+    <input type="number" id="stripWidthMM" value="1" min="0.01" step="0.1">
+  </label>
+  <label>Ausrichtung
+    <select id="orientation">
+      <option value="vertical">Vertikale Streifen</option>
+      <option value="horizontal">Horizontale Streifen</option>
+    </select>
+  </label>
+</div>
 
-            <label>Horizontaler Versatz (X) <span class="val-display" id="valXA">0%</span></label>
-            <input type="range" id="offsetXA" min="-100" max="100" value="0" oninput="updateValDisplay('valXA', this.value + '%'); triggerUpdate()">
-            
-            <label>Vertikaler Versatz (Y) <span class="val-display" id="valYA">0%</span></label>
-            <input type="range" id="offsetYA" min="-100" max="100" value="0" oninput="updateValDisplay('valYA', this.value + '%'); triggerUpdate()">
-        </div>
-
-        <!-- BILD B -->
-        <div class="control-block control-block-B">
-            <label style="font-weight:bold; font-size:14px;">Bild B</label>
-            <input type="file" id="imgB" accept="image/*" onchange="triggerUpdate()">
-            
-            <label>Anpassung an Zielgröße</label>
-            <select id="fitB" onchange="triggerUpdate()">
-                <option value="cover" selected>Ausfüllen (Cover - Proportional)</option>
-                <option value="contain">Vollständig anzeigen (Contain)</option>
-                <option value="stretch">Verzerren / Strecken (Stretch)</option>
-            </select>
-
-            <label>Zoom <span class="val-display" id="valScaleB">100%</span></label>
-            <input type="range" id="scaleB" min="10" max="300" value="100" oninput="updateValDisplay('valScaleB', this.value + '%'); triggerUpdate()">
-
-            <label>Horizontaler Versatz (X) <span class="val-display" id="valXB">0%</span></label>
-            <input type="range" id="offsetXB" min="-100" max="100" value="0" oninput="updateValDisplay('valXB', this.value + '%'); triggerUpdate()">
-            
-            <label>Vertikaler Versatz (Y) <span class="val-display" id="valYB">0%</span></label>
-            <input type="range" id="offsetYB" min="-100" max="100" value="0" oninput="updateValDisplay('valYB', this.value + '%'); triggerUpdate()">
-        </div>
-
-        <!-- BILD C -->
-        <div class="control-block control-block-C">
-            <label style="font-weight:bold; font-size:14px;">Optional Bild C</label>
-            <input type="file" id="imgC" accept="image/*" onchange="triggerUpdate()">
-            
-            <label>Anpassung an Zielgröße</label>
-            <select id="fitC" onchange="triggerUpdate()">
-                <option value="cover" selected>Ausfüllen (Cover - Proportional)</option>
-                <option value="contain">Vollständig anzeigen (Contain)</option>
-                <option value="stretch">Verzerren / Strecken (Stretch)</option>
-            </select>
-
-            <label>Zoom <span class="val-display" id="valScaleC">100%</span></label>
-            <input type="range" id="scaleC" min="10" max="300" value="100" oninput="updateValDisplay('valScaleC', this.value + '%'); triggerUpdate()">
-
-            <label>Horizontaler Versatz (X) <span class="val-display" id="valXC">0%</span></label>
-            <input type="range" id="offsetXC" min="-100" max="100" value="0" oninput="updateValDisplay('valXC', this.value + '%'); triggerUpdate()">
-            
-            <label>Vertikaler Versatz (Y) <span class="val-display" id="valYC">0%</span></label>
-            <input type="range" id="offsetYC" min="-100" max="100" value="0" oninput="updateValDisplay('valYC', this.value + '%'); triggerUpdate()">
-        </div>
-
-        <hr>
-
-        <label>Ziel-Format</label>
-        <select id="preset" onchange="triggerUpdate()">
-            <option value="custom">Benutzerdefiniert</option>
-            <option value="21:9">21:9</option>
-            <option value="16:9" selected>16:9</option>
-            <option value="4:3">4:3</option>
-            <option value="3:2">3:2</option>
-            <option value="1:1">1:1</option>
-        </select>
-
-        <label>Ziel-Breite (mm)</label>
-        <input type="number" id="widthMM" value="210" onchange="triggerUpdate()">
-
-        <label>Ziel-Höhe (mm)</label>
-        <input type="number" id="heightMM" value="118" onchange="triggerUpdate()">
-
-        <label>DPI</label>
-        <select id="dpi" onchange="triggerUpdate()">
-            <option>150</option>
-            <option selected>300</option>
-            <option>600</option>
-        </select>
-
-        <hr>
-
-        <label>Breite Rand rundherum (mm)</label>
-        <input type="number" id="marginMM" value="10" min="0" onchange="triggerUpdate()">
-
-        <label class="checkbox-label">
-            <input type="checkbox" id="usePassmarks" checked onchange="triggerUpdate()"> Passmarken aktivieren
-        </label>
-
-        <hr>
-
-        <label>Modus</label>
-        <select id="mode" onchange="triggerUpdate()">
-            <option value="count" selected>Anzahl Streifen</option>
-            <option value="width">Streifenbreite (mm)</option>
-        </select>
-
-        <label>Anzahl Streifen</label>
-        <input type="number" id="stripCount" value="40" onchange="triggerUpdate()">
-
-        <label>Streifenbreite (mm)</label>
-        <input type="number" id="stripWidthMM" value="2" step="0.1" onchange="triggerUpdate()">
-
-        <label>Ausrichtung</label>
-        <select id="orientation" onchange="triggerUpdate()">
-            <option value="vertical" selected>Vertikal</option>
-            <option value="horizontal">Horizontal</option>
-        </select>
-
-        <hr>
-
-        <label>Export</label>
-        <select id="exportType">
-            <option value="image/jpeg">JPG</option>
-            <option value="image/png">PNG</option>
-        </select>
-
-        <button class="btn-primary" onclick="downloadImage()">Druckbild herunterladen</button>
-    </div>
-
-    <!-- VORSCHAU UND SIMULATOR -->
-    <div class="preview-panel">
-        <h2>Ausgabe & Simulation</h2>
-        <div id="info">Bitte Bilder auswählen.</div>
-        
-        <div class="simulator-box">
-            <strong>👀 Interaktiver Blickwinkel-Simulator</strong>
-            <p style="font-size: 13px; margin: 5px 0;">Bewege den Regler, um den Kipp-Effekt zu testen. Klicke auf den blauen Button, um das Streifenmuster wieder anzuzeigen.</p>
-            <input type="range" id="viewSlider" min="0" max="100" value="50" style="max-width:100%;" oninput="simulateView()">
-            <button class="btn-secondary" onclick="resetToStrips()">Druck-Streifenmuster anzeigen</button>
-        </div>
-
-        <canvas id="canvas"></canvas>
-    </div>
+<div class="panel">
+  <h2>4. Ergebnis</h2>
+  <label>Dateiformat
+    <select id="exportType">
+      <option value="image/jpeg">JPG</option>
+      <option value="image/png">PNG</option>
+    </select>
+  </label>
+  <button id="generateBtn" type="button">Wechselbild erzeugen</button>
+  <button id="downloadBtn" type="button" disabled>Bild herunterladen</button>
+  <div id="status" role="status">Bitte Bilder auswählen.</div>
+  <canvas id="canvas" hidden></canvas>
 </div>
 
 <script>
-let loadedImages = { imgA: null, imgB: null, imgC: null };
-let isSimulating = false;
+"use strict";
 
-function updateValDisplay(id, text) {
-    document.getElementById(id).innerText = text;
-}
+const $ = id => document.getElementById(id);
+let generated = false;
 
 function mmToPx(mm, dpi) {
-    return Math.round(mm * dpi / 25.4);
+  return Math.round(mm * dpi / 25.4);
 }
 
 function loadImage(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = function(event) {
-            const img = new Image();
-            img.onload = () => resolve(img);
-            img.onerror = () => reject(new Error("Bilddaten fehlerhaft."));
-            img.src = event.target.result;
-        };
-        reader.onerror = () => reject(new Error("Datei konnte nicht gelesen werden."));
-        reader.readAsDataURL(file);
-    });
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(img);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Ein Bild konnte nicht geladen werden."));
+    };
+    img.src = url;
+  });
 }
 
-/**
- * Universal-Berechnung zur Anpassung unterschiedlicher Bildgrößen an eine feste Zielgröße
- */
-function getDrawGeometry(img, targetW, targetH, zoomPercent, percentOffsetX, percentOffsetY, fitMode) {
-    const scale = (zoomPercent || 100) / 100;
-    
-    let baseW = targetW;
-    let baseH = targetH;
+// Mittig zuschneiden, damit jedes Foto das Zielformat ausfüllt.
+function cropInfo(img, targetW, targetH) {
+  const sourceRatio = img.width / img.height;
+  const targetRatio = targetW / targetH;
 
-    if (fitMode !== "stretch") {
-        const imgRatio = img.width / img.height;
-        const targetRatio = targetW / targetH;
-        
-        if (fitMode === "cover") {
-            if (imgRatio > targetRatio) {
-                baseH = targetH;
-                baseW = targetH * imgRatio;
-            } else {
-                baseW = targetW;
-                baseH = targetW / imgRatio;
-            }
-        } else if (fitMode === "contain") {
-            if (imgRatio > targetRatio) {
-                baseW = targetW;
-                baseH = targetW / imgRatio;
-            } else {
-                baseH = targetH;
-                baseW = targetH * imgRatio;
-            }
-        }
-    }
+  let sx = 0, sy = 0, sw = img.width, sh = img.height;
 
-    // Proportionaler Zoom auf die gewählte Grund-Anpassung
-    const drawW = baseW * scale;
-    const drawH = baseH * scale;
+  if (sourceRatio > targetRatio) {
+    sw = img.height * targetRatio;
+    sx = (img.width - sw) / 2;
+  } else {
+    sh = img.width / targetRatio;
+    sy = (img.height - sh) / 2;
+  }
 
-    // Basis-Zentrierung
-    let drawX = (targetW - drawW) / 2;
-    let drawY = (targetH - drawH) / 2;
-
-    // Entkoppelter Versatz
-    drawX += targetW * (percentOffsetX / 100);
-    drawY += targetH * (percentOffsetY / 100);
-
-    return { drawX, drawY, drawW, drawH };
+  return { sx, sy, sw, sh };
 }
 
-async function triggerUpdate() {
-    const inputA = document.getElementById("imgA").files[0];
-    const inputB = document.getElementById("imgB").files[0];
-    const inputC = document.getElementById("imgC").files[0];
-
-    try {
-        if (inputA && (!loadedImages.imgA || loadedImages.imgA._file !== inputA)) {
-            loadedImages.imgA = await loadImage(inputA);
-            loadedImages.imgA._file = inputA;
-        }
-        if (inputB && (!loadedImages.imgB || loadedImages.imgB._file !== inputB)) {
-            loadedImages.imgB = await loadImage(inputB);
-            loadedImages.imgB._file = inputB;
-        }
-        if (inputC && (!loadedImages.imgC || loadedImages.imgC._file !== inputC)) {
-            loadedImages.imgC = await loadImage(inputC);
-            loadedImages.imgC._file = inputC;
-        }
-    } catch(e) {
-        document.getElementById("info").innerHTML = "<span style='color:red;'>Fehler beim Laden: " + e.message + "</span>";
-        return;
-    }
-
-    if (!isSimulating) {
-        generate();
-    } else {
-        simulateView();
-    }
+function setStatus(message) {
+  $("status").textContent = message;
 }
 
-function resetToStrips() {
-    isSimulating = false;
-    document.getElementById("viewSlider").value = 50;
-    generate();
-}
+async function generate() {
+  const button = $("generateBtn");
+  button.disabled = true;
+  $("downloadBtn").disabled = true;
+  generated = false;
 
-function calculateStripsCount(width, height, dpi) {
-    const mode = document.getElementById("mode").value;
-    if (mode === "count") {
-        return parseInt(document.getElementById("stripCount").value) || 20;
-    } else {
-        const swmm = parseFloat(document.getElementById("stripWidthMM").value);
-        const swpx = mmToPx(swmm, dpi);
-        const totalPx = (document.getElementById("orientation").value === "vertical") ? width : height;
-        return Math.floor(totalPx / swpx) || 20;
-    }
-}
+  try {
+    const files = ["imgA", "imgB", "imgC"]
+      .map(id => $(id).files[0])
+      .filter(Boolean);
 
-function generate() {
-    const infoDiv = document.getElementById("info");
-    
-    const imgs = [];
-    const params = [];
-    
-    if (loadedImages.imgA) { 
-        imgs.push(loadedImages.imgA); 
-        params.push({x: parseFloat(offsetXA.value), y: parseFloat(offsetYA.value), scale: parseFloat(scaleA.value), fit: fitA.value}); 
-    }
-    if (loadedImages.imgB) { 
-        imgs.push(loadedImages.imgB); 
-        params.push({x: parseFloat(offsetXB.value), y: parseFloat(offsetYB.value), scale: parseFloat(scaleB.value), fit: fitB.value}); 
-    }
-    if (loadedImages.imgC) { 
-        imgs.push(loadedImages.imgC); 
-        params.push({x: parseFloat(offsetXC.value), y: parseFloat(offsetYC.value), scale: parseFloat(scaleC.value), fit: fitC.value}); 
+    if (files.length < 2) {
+      throw new Error("Bitte mindestens Bild A und Bild B auswählen.");
     }
 
-    if (imgs.length < 2) {
-        infoDiv.innerHTML = "Bitte wähle mindestens Bild A und Bild B aus.";
-        return;
+    const dpi = Number($("dpi").value);
+    const wmm = Number($("widthMM").value);
+    let hmm = Number($("heightMM").value);
+    const preset = $("preset").value;
+
+    if (!Number.isFinite(wmm) || wmm <= 0 ||
+        !Number.isFinite(hmm) || hmm <= 0) {
+      throw new Error("Breite und Höhe müssen größer als null sein.");
     }
 
-    const dpi = parseInt(document.getElementById("dpi").value);
-    let w = parseFloat(document.getElementById("widthMM").value);
-    let h = parseFloat(document.getElementById("heightMM").value);
-    let marginMM = parseFloat(document.getElementById("marginMM").value) || 0;
-    let usePassmarks = document.getElementById("usePassmarks").checked;
-
-    const preset = document.getElementById("preset").value;
     if (preset !== "custom") {
-        const r = preset.split(":");
-        h = w * parseFloat(r[1]) / parseFloat(r[0]);
-        document.getElementById("heightMM").value = h.toFixed(1);
+      const [ratioW, ratioH] = preset.split(":").map(Number);
+      hmm = wmm * ratioH / ratioW;
+      $("heightMM").value = hmm.toFixed(2);
     }
 
-    const imgWidth = mmToPx(w, dpi);
-    const imgHeight = mmToPx(h, dpi);
-    const strips = calculateStripsCount(imgWidth, imgHeight, dpi);
-    
-    const marginPx = mmToPx(marginMM, dpi);
-    const totalWidth = imgWidth + (marginPx * 2);
-    const totalHeight = imgHeight + (marginPx * 2);
+    const width = mmToPx(wmm, dpi);
+    const height = mmToPx(hmm, dpi);
 
-    const canvas = document.getElementById("canvas");
-    canvas.width = totalWidth;
-    canvas.height = totalHeight;
+    // Schutz vor versehentlich extrem großen Bildern.
+    if (width < 1 || height < 1 ||
+        width * height > 40000000) {
+      throw new Error(
+        "Das Bild ist zu groß für eine zuverlässige Verarbeitung. " +
+        "Bitte geringere Maße oder eine niedrigere DPI wählen."
+      );
+    }
+
+    const orientation = $("orientation").value;
+    let strips;
+
+    if ($("mode").value === "count") {
+      strips = Number($("stripCount").value);
+
+      if (!Number.isInteger(strips) || strips < 1 || strips > 2000) {
+        throw new Error("Die Streifenanzahl muss zwischen 1 und 2000 liegen.");
+      }
+    } else {
+      const stripeMM = Number($("stripWidthMM").value);
+
+      if (!Number.isFinite(stripeMM) || stripeMM <= 0) {
+        throw new Error("Die Streifenbreite muss größer als null sein.");
+      }
+
+      const stripePx = mmToPx(stripeMM, dpi);
+      if (stripePx < 1) {
+        throw new Error("Die Streifenbreite ist bei dieser DPI zu klein.");
+      }
+
+      const length = orientation === "vertical" ? width : height;
+      strips = Math.max(1, Math.ceil(length / stripePx));
+      strips = Math.min(strips, 2000);
+    }
+
+    setStatus("Bilder werden verarbeitet …");
+
+    const imgs = await Promise.all(files.map(loadImage));
+    const canvas = $("canvas");
+    canvas.width = width;
+    canvas.height = height;
 
     const ctx = canvas.getContext("2d");
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, totalWidth, totalHeight);
-    
-    const orientation = document.getElementById("orientation").value;
-    const L = imgs.length;
+    if (!ctx) throw new Error("Die Bildverarbeitung ist nicht verfügbar.");
 
-    // Bildstreifen-Generierung
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, width, height);
+
+    imgs.forEach(img => {
+      if (!img.width || !img.height) {
+        throw new Error("Ein ausgewähltes Bild ist ungültig.");
+      }
+    });
+
     for (let i = 0; i < strips; i++) {
-        const imgIndex = i % L;
-        const img = imgs[imgIndex];
-        const p = params[imgIndex];
+      const img = imgs[i % imgs.length];
+      const c = cropInfo(img, width, height);
 
-        ctx.save();
-        ctx.beginPath();
+      if (orientation === "vertical") {
+        const x0 = Math.round(i * width / strips);
+        const x1 = Math.round((i + 1) * width / strips);
+        const sx0 = c.sx + i * c.sw / strips;
+        const sx1 = c.sx + (i + 1) * c.sw / strips;
 
-        if (orientation === "vertical") {
-            const dw = imgWidth / strips;
-            ctx.rect(marginPx + i * dw, marginPx, dw, imgHeight);
-        } else {
-            const dh = imgHeight / strips;
-            ctx.rect(marginPx, marginPx + i * dh, imgWidth, dh);
-        }
+        ctx.drawImage(
+          img, sx0, c.sy, sx1 - sx0, c.sh,
+          x0, 0, x1 - x0, height
+        );
+      } else {
+        const y0 = Math.round(i * height / strips);
+        const y1 = Math.round((i + 1) * height / strips);
+        const sy0 = c.sy + i * c.sh / strips;
+        const sy1 = c.sy + (i + 1) * c.sh / strips;
 
-        ctx.clip();
-
-        // Zeichnet das Bild angepasst an die einheitliche Ziel-Größe
-        const geo = getDrawGeometry(img, imgWidth, imgHeight, p.scale, p.x, p.y, p.fit);
-        ctx.drawImage(img, marginPx + geo.drawX, marginPx + geo.drawY, geo.drawW, geo.drawH);
-
-        ctx.restore();
+        ctx.drawImage(
+          img, c.sx, sy0, c.sw, sy1 - sy0,
+          0, y0, width, y1 - y0
+        );
+      }
     }
 
-    // Passmarken
-    if (usePassmarks && marginPx > 0) {
-        ctx.strokeStyle = "#000000";
-        ctx.lineWidth = Math.max(1, Math.round(dpi / 300));
-        const markLength = Math.min(marginPx * 0.8, Math.round(dpi * 8 / 25.4)); 
-        
-        for (let i = 0; i <= strips; i++) {
-            ctx.beginPath();
-            if (orientation === "vertical") {
-                const x = marginPx + (imgWidth / strips) * i;
-                ctx.moveTo(x, marginPx - markLength);
-                ctx.lineTo(x, marginPx);
-                ctx.moveTo(x, marginPx + imgHeight);
-                ctx.lineTo(x, marginPx + imgHeight + markLength);
-            } else {
-                const y = marginPx + (imgHeight / strips) * i;
-                ctx.moveTo(marginPx - markLength, y);
-                ctx.lineTo(marginPx, y);
-                ctx.moveTo(marginPx + imgWidth, y);
-                ctx.lineTo(marginPx + imgWidth + markLength);
-            }
-            ctx.stroke();
-        }
-    }
+    canvas.hidden = false;
+    generated = true;
+    $("downloadBtn").disabled = false;
 
-    infoDiv.innerHTML = `<strong>Druckbild bereit!</strong><br>Bildgröße: ${imgWidth} × ${imgHeight} px<br>Gesamtgröße (inkl. Rand): ${totalWidth} × ${totalHeight} px<br>Streifen: ${strips}`;
-}
-
-function simulateView() {
-    const canvas = document.getElementById("canvas");
-    const ctx = canvas.getContext("2d");
-    const sliderVal = document.getElementById("viewSlider").value / 100;
-    
-    const imgs = [];
-    if (loadedImages.imgA) imgs.push(loadedImages.imgA);
-    if (loadedImages.imgB) imgs.push(loadedImages.imgB);
-    if (loadedImages.imgC) imgs.push(loadedImages.imgC);
-
-    if (imgs.length < 2) return;
-
-    isSimulating = true;
-
-    const dpi = parseInt(document.getElementById("dpi").value);
-    let marginMM = parseFloat(document.getElementById("marginMM").value) || 0;
-    const marginPx = mmToPx(marginMM, dpi);
-    
-    const totalWidth = canvas.width;
-    const totalHeight = canvas.height;
-    
-    const imgWidth = totalWidth - (marginPx * 2);
-    const imgHeight = totalHeight - (marginPx * 2);
-
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, totalWidth, totalHeight);
-
-    let imgIndexA = 0;
-    let imgIndexB = 1;
-    let weight = 0;
-
-    if (imgs.length === 2) {
-        imgIndexA = 0;
-        imgIndexB = 1;
-        weight = sliderVal;
-    } else if (imgs.length === 3) {
-        if (sliderVal < 0.5) {
-            imgIndexA = 0;
-            imgIndexB = 1;
-            weight = sliderVal * 2;
-        } else {
-            imgIndexA = 1;
-            imgIndexB = 2;
-            weight = (sliderVal - 0.5) * 2;
-        }
-    }
-
-    const params = [];
-    if (loadedImages.imgA) params.push({x: parseFloat(offsetXA.value), y: parseFloat(offsetYA.value), scale: parseFloat(scaleA.value), fit: fitA.value});
-    if (loadedImages.imgB) params.push({x: parseFloat(offsetXB.value), y: parseFloat(offsetYB.value), scale: parseFloat(scaleB.value), fit: fitB.value});
-    if (loadedImages.imgC) params.push({x: parseFloat(offsetXC.value), y: parseFloat(offsetYC.value), scale: parseFloat(scaleC.value), fit: fitC.value});
-
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(marginPx, marginPx, imgWidth, imgHeight);
-    ctx.clip();
-
-    ctx.globalAlpha = 1 - weight;
-    const geoA = getDrawGeometry(imgs[imgIndexA], imgWidth, imgHeight, params[imgIndexA].scale, params[imgIndexA].x, params[imgIndexA].y, params[imgIndexA].fit);
-    ctx.drawImage(imgs[imgIndexA], marginPx + geoA.drawX, marginPx + geoA.drawY, geoA.drawW, geoA.drawH);
-
-    ctx.globalAlpha = weight;
-    const geoB = getDrawGeometry(imgs[imgIndexB], imgWidth, imgHeight, params[imgIndexB].scale, params[imgIndexB].x, params[imgIndexB].y, params[imgIndexB].fit);
-    ctx.drawImage(imgs[imgIndexB], marginPx + geoB.drawX, marginPx + geoB.drawY, geoB.drawW, geoB.drawH);
-
-    ctx.restore();
-    ctx.globalAlpha = 1.0; 
-    document.getElementById("info").innerHTML = "<em>Vorschau-Simulation aktiv</em>";
+    setStatus(
+      "Fertig!\n" +
+      "Ausgabe: " + wmm.toFixed(2) + " × " + hmm.toFixed(2) + " mm\n" +
+      "Pixel: " + width + " × " + height + "\n" +
+      "Auflösung: " + dpi + " DPI\n" +
+      "Streifen: " + strips + "\n" +
+      "Verwendete Bilder: " + imgs.length
+    );
+  } catch (error) {
+    setStatus("Fehler: " + error.message);
+    alert(error.message);
+  } finally {
+    button.disabled = false;
+  }
 }
 
 function downloadImage() {
-    resetToStrips();
-    const canvas = document.getElementById("canvas");
-    const type = document.getElementById("exportType").value;
-    const suffix = document.getElementById("usePassmarks").checked ? "_mit_marken" : "_pur";
-    const filename = "wechselbild" + suffix + (type === "image/png" ? ".png" : ".jpg");
+  if (!generated) {
+    alert("Bitte zuerst ein Wechselbild erzeugen.");
+    return;
+  }
 
-    canvas.toBlob(function(blob) {
-        if (!blob) {
-            alert("Fehler beim Erstellen der Datei.");
-            return;
-        }
-        
-        const blobUrl = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = blobUrl;
-        a.download = filename;
-        
-        document.body.appendChild(a);
-        a.click();
-        
-        setTimeout(() => {
-            document.body.removeChild(a);
-            URL.revokeObjectURL(blobUrl);
-        }, 150);
-    }, type, 0.95);
+  const canvas = $("canvas");
+  const type = $("exportType").value;
+  const filename = type === "image/png"
+    ? "wechselbild.png"
+    : "wechselbild.jpg";
+
+  canvas.toBlob(blob => {
+    if (!blob) {
+      alert("Das Bild konnte nicht exportiert werden.");
+      return;
+    }
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }, type, 0.95);
 }
-</script>
 
+$("generateBtn").addEventListener("click", generate);
+$("downloadBtn").addEventListener("click", downloadImage);
+
+// Beim Ändern eines festen Formats die Höhe direkt aktualisieren.
+$("preset").addEventListener("change", () => {
+  const preset = $("preset").value;
+  if (preset === "custom") return;
+
+  const [rw, rh] = preset.split(":").map(Number);
+  const w = Number($("widthMM").value);
+
+  if (w > 0) $("heightMM").value = (w * rh / rw).toFixed(2);
+});
+</script>
 </body>
 </html>
