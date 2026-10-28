@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Wechselbild App Pro – Korrigiertes Streifenmuster</title>
+<title>Wechselbild App Pro – Direkter Streifen-Export</title>
 
 <style>
 body{
@@ -454,40 +454,31 @@ function generate() {
     const orientation = document.getElementById("orientation").value;
     const L = imgs.length;
 
-    // Erstelle ein unsichtbares Offscreen-Canvas für jedes Bild, um es sauber vorzubereiten
-    const offscreenCanvases = params.map(p => {
-        const c = document.createElement('canvas');
-        c.width = imgWidth;
-        c.height = imgHeight;
-        const cCtx = c.getContext('2d');
-        cCtx.fillStyle = "#ffffff";
-        cCtx.fillRect(0, 0, imgWidth, imgHeight);
-        
-        const geo = getDrawGeometry(p.img, imgWidth, imgHeight, p.scale, p.x, p.y, p.fit);
-        cCtx.drawImage(p.img, geo.drawX, geo.drawY, geo.drawW, geo.drawH);
-        return c;
-    });
-
-    // Streifenweises Zusammensetzen auf dem Haupt-Canvas
+    // Direktes Zeichnen und Schneiden über Clip-Masken (zuverlässig und performant auf iPad)
     for (let i = 0; i < strips; i++) {
         const imgIndex = i % L;
-        const sourceCanvas = offscreenCanvases[imgIndex];
+        const targetImg = params[imgIndex];
+
+        ctx.save();
+        ctx.beginPath();
 
         if (orientation === "vertical") {
             const dw = imgWidth / strips;
-            const dx = marginPx + (i * dw);
-            const sx = (i / strips) * imgWidth;
-            const sw = imgWidth / strips;
+            ctx.rect(marginPx + (i * dw), marginPx, dw, imgHeight);
+            ctx.clip();
 
-            ctx.drawImage(sourceCanvas, sx, 0, sw, imgHeight, dx, marginPx, dw, imgHeight);
+            const geo = getDrawGeometry(targetImg.img, imgWidth, imgHeight, targetImg.scale, targetImg.x, targetImg.y, targetImg.fit);
+            ctx.drawImage(targetImg.img, marginPx + geo.drawX, marginPx + geo.drawY, geo.drawW, geo.drawH);
         } else {
             const dh = imgHeight / strips;
-            const dy = marginPx + (i * dh);
-            const sy = (i / strips) * imgHeight;
-            const sh = imgHeight / strips;
+            ctx.rect(marginPx, marginPx + (i * dh), imgWidth, dh);
+            ctx.clip();
 
-            ctx.drawImage(sourceCanvas, 0, sy, imgWidth, sh, marginPx, dy, imgWidth, dh);
+            const geo = getDrawGeometry(targetImg.img, imgWidth, imgHeight, targetImg.scale, targetImg.x, targetImg.y, targetImg.fit);
+            ctx.drawImage(targetImg.img, marginPx + geo.drawX, marginPx + geo.drawY, geo.drawW, geo.drawH);
         }
+
+        ctx.restore();
     }
 
     // Passmarken zeichnen
@@ -562,49 +553,3 @@ function simulateView() {
             imgIndexA = 1;
             imgIndexB = 2;
             weight = (sliderVal - 0.5) * 2;
-        }
-    }
-
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(marginPx, marginPx, imgWidth, imgHeight);
-    ctx.clip();
-
-    ctx.globalAlpha = 1 - weight;
-    const geoA = getDrawGeometry(imgs[imgIndexA], imgWidth, imgHeight, parseFloat(scaleA.value), parseFloat(offsetXA.value), parseFloat(offsetYA.value), fitA.value);
-    ctx.drawImage(imgs[imgIndexA], marginPx + geoA.drawX, marginPx + geoA.drawY, geoA.drawW, geoA.drawH);
-
-    ctx.globalAlpha = weight;
-    const geoB = getDrawGeometry(imgs[imgIndexB], imgWidth, imgHeight, parseFloat(scaleB.value), parseFloat(offsetXB.value), parseFloat(offsetYB.value), fitB.value);
-    ctx.drawImage(imgs[imgIndexB], marginPx + geoB.drawX, marginPx + geoB.drawY, geoB.drawW, geoB.drawH);
-
-    ctx.restore();
-    ctx.globalAlpha = 1.0; 
-    document.getElementById("info").innerHTML = "<em>Vorschau-Simulation aktiv</em>";
-}
-
-function downloadImage() {
-    resetToStrips();
-    const canvas = document.getElementById("canvas");
-    const type = document.getElementById("exportType").value;
-    const suffix = document.getElementById("usePassmarks").checked ? "_mit_marken" : "_pur";
-    const filename = "wechselbild" + suffix + (type === "image/png" ? ".png" : ".jpg");
-
-    canvas.toBlob(function(blob) {
-        if (!blob) {
-            alert("Fehler beim Erstellen der Datei.");
-            return;
-        }
-        
-        const blobUrl = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = blobUrl;
-        a.download = filename;
-        
-        document.body.appendChild(a);
-        a.click();
-        
-        setTimeout(() => {
-            document.body.removeChild(a);
-            URL.revokeObjectURL(blobUrl);
-        },
