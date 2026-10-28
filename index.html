@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Wechselbild App Pro – Stabil & Alternierend</title>
+<title>Wechselbild App Pro – Druckmuster & Simulation getrennt</title>
 
 <style>
 body{
@@ -289,7 +289,6 @@ button{
 
 <script>
 let images = { A: null, B: null, C: null };
-let isSimulating = false;
 
 function updateValDisplay(id, text) {
     document.getElementById(id).innerText = text;
@@ -317,13 +316,11 @@ function handleFile(input, imgKey) {
 }
 
 function requestRender() {
-    isSimulating = false;
     document.getElementById("viewSlider").value = 50;
     generateStrips();
 }
 
 function resetToStrips() {
-    isSimulating = false;
     document.getElementById("viewSlider").value = 50;
     generateStrips();
 }
@@ -394,6 +391,7 @@ function getParams(prefix) {
     };
 }
 
+// 1. ECHTES DRUCKSTREIFENMUSTER (Alternierendes Slicing)
 function generateStrips() {
     const active = getActiveImages();
     if (active.length < 2) {
@@ -433,7 +431,6 @@ function generateStrips() {
     const orientation = document.getElementById("orientation").value;
     const L = active.length;
 
-    // 1. Vorbereiten der Quellpuffer mit Zoom, Versatz & Fitting
     const preparedBuffers = active.map(item => {
         const buf = document.createElement('canvas');
         buf.width = imgWidth;
@@ -447,7 +444,6 @@ function generateStrips() {
         return buf;
     });
 
-    // 2. Streng alternierendes Slicing (A, B, A, B...)
     for (let i = 0; i < strips; i++) {
         const imgIndex = i % L;
         const sourceBuffer = preparedBuffers[imgIndex];
@@ -464,21 +460,20 @@ function generateStrips() {
         if (orientation === "vertical") {
             const dw = imgWidth / strips;
             const dx = marginPx + (i * dw);
-            const sw = imgWidth / totalSlicesForImg;
+            const sw = imgWidth / totalSlicesForThisImg;
             const sx = sliceIndexForThisImg * sw;
 
             ctx.drawImage(sourceBuffer, sx, 0, sw, imgHeight, dx, marginPx, dw, imgHeight);
         } else {
             const dh = imgHeight / strips;
             const dy = marginPx + (i * dh);
-            const sh = imgHeight / totalSlicesForImg;
+            const sh = imgHeight / totalSlicesForThisImg;
             const sy = sliceIndexForThisImg * sh;
 
             ctx.drawImage(sourceBuffer, 0, sy, imgWidth, sh, marginPx, dy, imgWidth, dh);
         }
     }
 
-    // Passmarken
     if (usePassmarks && marginPx > 0) {
         ctx.strokeStyle = "#000000";
         ctx.lineWidth = Math.max(1, Math.round(dpi / 300));
@@ -503,14 +498,14 @@ function generateStrips() {
         }
     }
 
-    document.getElementById("info").innerHTML = `<strong>Druckbild erfolgreich generiert!</strong><br>Auflösung: ${imgWidth} × ${imgHeight} px<br>Streifen: ${strips} (Alternierend)`;
+    document.getElementById("info").innerHTML = `<strong>Druckbild (Streifenmuster) bereit!</strong><br>Streifen: ${strips} (Alternierend A/B/C)`;
 }
 
+// 2. BLICKWINKEL-SIMULATOR (Aktiviert sich NUR beim Verschieben des Reglers)
 function simulateView() {
     const active = getActiveImages();
     if (active.length < 2) return;
 
-    isSimulating = true;
     const sliderVal = document.getElementById("viewSlider").value / 100;
     
     const dpi = parseInt(document.getElementById("dpi").value) || 300;
