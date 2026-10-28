@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Wechselbild App Pro – Stabil & Direkt</title>
+<title>Wechselbild App Pro – Korrigiertes Streifenmuster</title>
 
 <style>
 body{
@@ -454,40 +454,43 @@ function generate() {
     const orientation = document.getElementById("orientation").value;
     const L = imgs.length;
 
-    // Direktes Zeichnen per Clip-Masken (garantiert sofortige Sichtbarkeit ohne Offscreen-Fehler)
+    // Erstelle ein unsichtbares Offscreen-Canvas für jedes Bild, um es sauber vorzubereiten
+    const offscreenCanvases = params.map(p => {
+        const c = document.createElement('canvas');
+        c.width = imgWidth;
+        c.height = imgHeight;
+        const cCtx = c.getContext('2d');
+        cCtx.fillStyle = "#ffffff";
+        cCtx.fillRect(0, 0, imgWidth, imgHeight);
+        
+        const geo = getDrawGeometry(p.img, imgWidth, imgHeight, p.scale, p.x, p.y, p.fit);
+        cCtx.drawImage(p.img, geo.drawX, geo.drawY, geo.drawW, geo.drawH);
+        return c;
+    });
+
+    // Streifenweises Zusammensetzen auf dem Haupt-Canvas
     for (let i = 0; i < strips; i++) {
         const imgIndex = i % L;
-        const targetImg = params[imgIndex];
-        
-        const sliceForThisImg = Math.floor(i / L);
-        let totalSlicesForThisImg = 0;
-        for (let k = 0; k < strips; k++) {
-            if (k % L === imgIndex) totalSlicesForImg++;
-        }
-
-        ctx.save();
-        ctx.beginPath();
+        const sourceCanvas = offscreenCanvases[imgIndex];
 
         if (orientation === "vertical") {
             const dw = imgWidth / strips;
-            ctx.rect(marginPx + (i * dw), marginPx, dw, imgHeight);
-            ctx.clip();
+            const dx = marginPx + (i * dw);
+            const sx = (i / strips) * imgWidth;
+            const sw = imgWidth / strips;
 
-            const geo = getDrawGeometry(targetImg.img, imgWidth, imgHeight, targetImg.scale, targetImg.x, targetImg.y, targetImg.fit);
-            ctx.drawImage(targetImg.img, marginPx + geo.drawX, marginPx + geo.drawY, geo.drawW, geo.drawH);
+            ctx.drawImage(sourceCanvas, sx, 0, sw, imgHeight, dx, marginPx, dw, imgHeight);
         } else {
             const dh = imgHeight / strips;
-            ctx.rect(marginPx, marginPx + (i * dh), imgWidth, dh);
-            ctx.clip();
+            const dy = marginPx + (i * dh);
+            const sy = (i / strips) * imgHeight;
+            const sh = imgHeight / strips;
 
-            const geo = getDrawGeometry(targetImg.img, imgWidth, imgHeight, targetImg.scale, targetImg.x, targetImg.y, targetImg.fit);
-            ctx.drawImage(targetImg.img, marginPx + geo.drawX, marginPx + geo.drawY, geo.drawW, geo.drawH);
+            ctx.drawImage(sourceCanvas, 0, sy, imgWidth, sh, marginPx, dy, imgWidth, dh);
         }
-
-        ctx.restore();
     }
 
-    // Passmarken
+    // Passmarken zeichnen
     if (usePassmarks && marginPx > 0) {
         ctx.strokeStyle = "#000000";
         ctx.lineWidth = Math.max(1, Math.round(dpi / 300));
@@ -604,10 +607,4 @@ function downloadImage() {
         setTimeout(() => {
             document.body.removeChild(a);
             URL.revokeObjectURL(blobUrl);
-        }, 150);
-    }, type, 0.95);
-}
-</script>
-
-</body>
-</html>
+        },
