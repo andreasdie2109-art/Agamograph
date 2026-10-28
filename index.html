@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Wechselbild App Pro – Einheitliche Zielgröße</title>
+<title>Wechselbild App Pro – Reines Alternierendes Raster</title>
 
 <style>
 body{
@@ -134,7 +134,7 @@ button{
 
 <body>
 
-<h1>Wechselbild App Pro</h1>
+<h1>Wechselbild App Pro (Sauberes Alternieren)</h1>
 
 <div class="container">
     <!-- EINSTELLUNGEN -->
@@ -313,9 +313,6 @@ function loadImage(file) {
     });
 }
 
-/**
- * Universal-Berechnung zur Anpassung unterschiedlicher Bildgrößen an eine feste Zielgröße
- */
 function getDrawGeometry(img, targetW, targetH, zoomPercent, percentOffsetX, percentOffsetY, fitMode) {
     const scale = (zoomPercent || 100) / 100;
     
@@ -345,15 +342,12 @@ function getDrawGeometry(img, targetW, targetH, zoomPercent, percentOffsetX, per
         }
     }
 
-    // Proportionaler Zoom auf die gewählte Grund-Anpassung
     const drawW = baseW * scale;
     const drawH = baseH * scale;
 
-    // Basis-Zentrierung
     let drawX = (targetW - drawW) / 2;
     let drawY = (targetH - drawH) / 2;
 
-    // Entkoppelter Versatz
     drawX += targetW * (percentOffsetX / 100);
     drawY += targetH * (percentOffsetY / 100);
 
@@ -464,11 +458,26 @@ function generate() {
     const orientation = document.getElementById("orientation").value;
     const L = imgs.length;
 
-    // Bildstreifen-Generierung
+    // Erstelle ein unsichtbares Offscreen-Canvas für jedes Bild, um es VORHER auf die Zielgröße 
+    // inklusive Zoom und Versatz zu bringen. Dadurch greift das echte, verlustfreie Alternier-Raster!
+    const offscreenCanvases = imgs.map((img, idx) => {
+        const c = document.createElement('canvas');
+        c.width = imgWidth;
+        c.height = imgHeight;
+        const cCtx = c.getContext('2d');
+        cCtx.fillStyle = "#ffffff";
+        cCtx.fillRect(0, 0, imgWidth, imgHeight);
+        
+        const p = params[idx];
+        const geo = getDrawGeometry(img, imgWidth, imgHeight, p.scale, p.x, p.y, p.fit);
+        cCtx.drawImage(img, geo.drawX, geo.drawY, geo.drawW, geo.drawH);
+        return c;
+    });
+
+    // Jetzt werden die fertig skizzierten Bilder streng alternierend in Streifen geschnitten und gedruckt
     for (let i = 0; i < strips; i++) {
         const imgIndex = i % L;
-        const img = imgs[imgIndex];
-        const p = params[imgIndex];
+        const sourceCanvas = offscreenCanvases[imgIndex];
 
         ctx.save();
         ctx.beginPath();
@@ -476,16 +485,14 @@ function generate() {
         if (orientation === "vertical") {
             const dw = imgWidth / strips;
             ctx.rect(marginPx + i * dw, marginPx, dw, imgHeight);
+            ctx.clip();
+            ctx.drawImage(sourceCanvas, marginPx, marginPx);
         } else {
             const dh = imgHeight / strips;
             ctx.rect(marginPx, marginPx + i * dh, imgWidth, dh);
+            ctx.clip();
+            ctx.drawImage(sourceCanvas, marginPx, marginPx);
         }
-
-        ctx.clip();
-
-        // Zeichnet das Bild angepasst an die einheitliche Ziel-Größe
-        const geo = getDrawGeometry(img, imgWidth, imgHeight, p.scale, p.x, p.y, p.fit);
-        ctx.drawImage(img, marginPx + geo.drawX, marginPx + geo.drawY, geo.drawW, geo.drawH);
 
         ctx.restore();
     }
@@ -515,7 +522,7 @@ function generate() {
         }
     }
 
-    infoDiv.innerHTML = `<strong>Druckbild bereit!</strong><br>Bildgröße: ${imgWidth} × ${imgHeight} px<br>Gesamtgröße (inkl. Rand): ${totalWidth} × ${totalHeight} px<br>Streifen: ${strips}`;
+    infoDiv.innerHTML = `<strong>Druckbild bereit!</strong><br>Bildgröße: ${imgWidth} × ${imgHeight} px<br>Gesamtgröße (inkl. Rand): ${totalWidth} × ${totalHeight} px<br>Streifen: ${strips} (Streng alternierend)`;
 }
 
 function simulateView() {
@@ -584,7 +591,7 @@ function simulateView() {
     ctx.drawImage(imgs[imgIndexB], marginPx + geoB.drawX, marginPx + geoB.drawY, geoB.drawW, geoB.drawH);
 
     ctx.restore();
-    ctx.globalAlpha = 1.0; 
+    ctx.globalAlpha = true; 
     document.getElementById("info").innerHTML = "<em>Vorschau-Simulation aktiv</em>";
 }
 
