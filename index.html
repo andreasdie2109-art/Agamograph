@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Wechselbild App Pro – Perfektes Alternierendes Slicing</title>
+<title>Wechselbild App Pro – Stabil & Alternierend</title>
 
 <style>
 body{
@@ -143,7 +143,7 @@ button{
         <!-- BILD A -->
         <div class="control-block control-block-A">
             <label style="font-weight:bold; font-size:14px;">Bild A</label>
-            <input type="file" id="fileA" accept="image/*">
+            <input type="file" id="fileA" accept="image/*" onchange="handleFile(this, 'A')">
             
             <label>Anpassung an Zielgröße</label>
             <select id="fitA" onchange="requestRender()">
@@ -165,7 +165,7 @@ button{
         <!-- BILD B -->
         <div class="control-block control-block-B">
             <label style="font-weight:bold; font-size:14px;">Bild B</label>
-            <input type="file" id="fileB" accept="image/*">
+            <input type="file" id="fileB" accept="image/*" onchange="handleFile(this, 'B')">
             
             <label>Anpassung an Zielgröße</label>
             <select id="fitB" onchange="requestRender()">
@@ -187,7 +187,7 @@ button{
         <!-- BILD C -->
         <div class="control-block control-block-C">
             <label style="font-weight:bold; font-size:14px;">Optional Bild C</label>
-            <input type="file" id="fileC" accept="image/*">
+            <input type="file" id="fileC" accept="image/*" onchange="handleFile(this, 'C')">
             
             <label>Anpassung an Zielgröße</label>
             <select id="fitC" onchange="requestRender()">
@@ -299,28 +299,22 @@ function mmToPx(mm, dpi) {
     return Math.round(mm * dpi / 25.4);
 }
 
-function setupFileInput(fileInputId, imgKey) {
-    document.getElementById(fileInputId).addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
+function handleFile(input, imgKey) {
+    const file = input.files[0];
+    if (!file) return;
 
-        const reader = new FileReader();
-        reader.onload = function(event) {
-            const img = new Image();
-            img.onload = function() {
-                images[imgKey] = img;
-                document.getElementById("info").innerHTML = `Bild ${imgKey} geladen (${img.width}×${img.height}px).`;
-                requestRender();
-            };
-            img.src = event.target.result;
+    const reader = new FileReader();
+    reader.onload = function(event) {
+        const img = new Image();
+        img.onload = function() {
+            images[imgKey] = img;
+            document.getElementById("info").innerHTML = `Bild ${imgKey} geladen (${img.width}×${img.height}px).`;
+            requestRender();
         };
-        reader.readAsDataURL(file);
-    });
+        img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
 }
-
-setupFileInput('fileA', 'A');
-setupFileInput('fileB', 'B');
-setupFileInput('fileC', 'C');
 
 function requestRender() {
     isSimulating = false;
@@ -437,4 +431,164 @@ function generateStrips() {
     ctx.fillRect(0, 0, totalWidth, totalHeight);
     
     const orientation = document.getElementById("orientation").value;
-    const L = active
+    const L = active.length;
+
+    // 1. Vorbereiten der Quellpuffer mit Zoom, Versatz & Fitting
+    const preparedBuffers = active.map(item => {
+        const buf = document.createElement('canvas');
+        buf.width = imgWidth;
+        buf.height = imgHeight;
+        const bCtx = buf.getContext('2d');
+        bCtx.fillStyle = "#ffffff";
+        bCtx.fillRect(0, 0, imgWidth, imgHeight);
+
+        const p = getParams(item.prefix);
+        renderImageToContext(bCtx, item.img, imgWidth, imgHeight, p.scale, p.x, p.y, p.fit);
+        return buf;
+    });
+
+    // 2. Streng alternierendes Slicing (A, B, A, B...)
+    for (let i = 0; i < strips; i++) {
+        const imgIndex = i % L;
+        const sourceBuffer = preparedBuffers[imgIndex];
+
+        let totalSlicesForThisImg = 0;
+        let sliceIndexForThisImg = 0;
+        for (let k = 0; k < strips; k++) {
+            if (k % L === imgIndex) {
+                if (k === i) sliceIndexForThisImg = totalSlicesForThisImg;
+                totalSlicesForThisImg++;
+            }
+        }
+
+        if (orientation === "vertical") {
+            const dw = imgWidth / strips;
+            const dx = marginPx + (i * dw);
+            const sw = imgWidth / totalSlicesForImg;
+            const sx = sliceIndexForThisImg * sw;
+
+            ctx.drawImage(sourceBuffer, sx, 0, sw, imgHeight, dx, marginPx, dw, imgHeight);
+        } else {
+            const dh = imgHeight / strips;
+            const dy = marginPx + (i * dh);
+            const sh = imgHeight / totalSlicesForImg;
+            const sy = sliceIndexForThisImg * sh;
+
+            ctx.drawImage(sourceBuffer, 0, sy, imgWidth, sh, marginPx, dy, imgWidth, dh);
+        }
+    }
+
+    // Passmarken
+    if (usePassmarks && marginPx > 0) {
+        ctx.strokeStyle = "#000000";
+        ctx.lineWidth = Math.max(1, Math.round(dpi / 300));
+        const markLength = Math.min(marginPx * 0.8, Math.round(dpi * 8 / 25.4)); 
+        
+        for (let i = 0; i <= strips; i++) {
+            ctx.beginPath();
+            if (orientation === "vertical") {
+                const x = marginPx + (imgWidth / strips) * i;
+                ctx.moveTo(x, marginPx - markLength);
+                ctx.lineTo(x, marginPx);
+                ctx.moveTo(x, marginPx + imgHeight);
+                ctx.lineTo(x, marginPx + imgHeight + markLength);
+            } else {
+                const y = marginPx + (imgHeight / strips) * i;
+                ctx.moveTo(marginPx - markLength, y);
+                ctx.lineTo(marginPx, y);
+                ctx.moveTo(marginPx + imgWidth, y);
+                ctx.lineTo(marginPx + imgWidth + markLength, y);
+            }
+            ctx.stroke();
+        }
+    }
+
+    document.getElementById("info").innerHTML = `<strong>Druckbild erfolgreich generiert!</strong><br>Auflösung: ${imgWidth} × ${imgHeight} px<br>Streifen: ${strips} (Alternierend)`;
+}
+
+function simulateView() {
+    const active = getActiveImages();
+    if (active.length < 2) return;
+
+    isSimulating = true;
+    const sliderVal = document.getElementById("viewSlider").value / 100;
+    
+    const dpi = parseInt(document.getElementById("dpi").value) || 300;
+    let marginMM = parseFloat(document.getElementById("marginMM").value) || 10;
+    const marginPx = mmToPx(marginMM, dpi);
+    
+    const canvas = document.getElementById("canvas");
+    const totalWidth = canvas.width;
+    const totalHeight = canvas.height;
+    
+    const imgWidth = totalWidth - (marginPx * 2);
+    const imgHeight = totalHeight - (marginPx * 2);
+
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, totalWidth, totalHeight);
+
+    let idxA = 0, idxB = 1, weight = sliderVal;
+    if (active.length === 3) {
+        if (sliderVal < 0.5) {
+            idxA = 0; idxB = 1; weight = sliderVal * 2;
+        } else {
+            idxA = 1; idxB = 2; weight = (sliderVal - 0.5) * 2;
+        }
+    }
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(marginPx, marginPx, imgWidth, imgHeight);
+    ctx.clip();
+
+    ctx.globalAlpha = 1 - weight;
+    ctx.save();
+    ctx.translate(marginPx, marginPx);
+    let pA = getParams(active[idxA].prefix);
+    renderImageToContext(ctx, active[idxA].img, imgWidth, imgHeight, pA.scale, pA.x, pA.y, pA.fit);
+    ctx.restore();
+
+    ctx.globalAlpha = weight;
+    ctx.save();
+    ctx.translate(marginPx, marginPx);
+    let pB = getParams(active[idxB].prefix);
+    renderImageToContext(ctx, active[idxB].img, imgWidth, imgHeight, pB.scale, pB.x, pB.y, pB.fit);
+    ctx.restore();
+
+    ctx.restore();
+    ctx.globalAlpha = 1.0; 
+    document.getElementById("info").innerHTML = "<em>Vorschau-Simulation aktiv</em>";
+}
+
+function downloadImage() {
+    resetToStrips();
+    const canvas = document.getElementById("canvas");
+    const type = document.getElementById("exportType").value;
+    const suffix = document.getElementById("usePassmarks").checked ? "_mit_marken" : "_pur";
+    const filename = "wechselbild" + suffix + (type === "image/png" ? ".png" : ".jpg");
+
+    canvas.toBlob(function(blob) {
+        if (!blob) {
+            alert("Fehler beim Erstellen der Datei.");
+            return;
+        }
+        
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        a.download = filename;
+        
+        document.body.appendChild(a);
+        a.click();
+        
+        setTimeout(() => {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(blobUrl);
+        }, 150);
+    }, type, 0.95);
+}
+</script>
+
+</body>
+</html>
