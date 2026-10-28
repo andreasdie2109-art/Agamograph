@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Wechselbild App Pro – Stabilisiert</title>
+<title>Wechselbild App Pro – Perfektes Alternierendes Slicing</title>
 
 <style>
 body{
@@ -288,7 +288,6 @@ button{
 </div>
 
 <script>
-// Globale Speicherstrukturen für geladene Bilder
 let images = { A: null, B: null, C: null };
 let isSimulating = false;
 
@@ -300,7 +299,6 @@ function mmToPx(mm, dpi) {
     return Math.round(mm * dpi / 25.4);
 }
 
-// Zentraler Event-Listener für Dateiuploads
 function setupFileInput(fileInputId, imgKey) {
     document.getElementById(fileInputId).addEventListener('change', function(e) {
         const file = e.target.files[0];
@@ -311,7 +309,7 @@ function setupFileInput(fileInputId, imgKey) {
             const img = new Image();
             img.onload = function() {
                 images[imgKey] = img;
-                document.getElementById("info").innerHTML = `Bild ${imgKey} erfolgreich geladen (${img.width}×${img.height}px).`;
+                document.getElementById("info").innerHTML = `Bild ${imgKey} geladen (${img.width}×${img.height}px).`;
                 requestRender();
             };
             img.src = event.target.result;
@@ -356,7 +354,7 @@ function calculateStripsCount(width, height, dpi) {
     }
 }
 
-function drawSingleImage(ctx, img, targetW, targetH, scalePct, offsetX, offsetY, fitMode) {
+function renderImageToContext(ctx, img, targetW, targetH, scalePct, offsetX, offsetY, fitMode) {
     const scale = (scalePct || 100) / 100;
     let baseW = targetW;
     let baseH = targetH;
@@ -439,148 +437,4 @@ function generateStrips() {
     ctx.fillRect(0, 0, totalWidth, totalHeight);
     
     const orientation = document.getElementById("orientation").value;
-    const L = active.length;
-
-    // Streifenweises Rendering direkt auf dem Canvas per Clipping
-    for (let i = 0; i < strips; i++) {
-        const item = active[i % L];
-        const p = getParams(item.prefix);
-
-        ctx.save();
-        ctx.beginPath();
-
-        if (orientation === "vertical") {
-            const dw = imgWidth / strips;
-            ctx.rect(marginPx + (i * dw), marginPx, dw, imgHeight);
-            ctx.clip();
-
-            ctx.translate(marginPx, marginPx);
-            drawSingleImage(ctx, item.img, imgWidth, imgHeight, p.scale, p.x, p.y, p.fit);
-        } else {
-            const dh = imgHeight / strips;
-            ctx.rect(marginPx, marginPx + (i * dh), imgWidth, dh);
-            ctx.clip();
-
-            ctx.translate(marginPx, marginPx);
-            drawSingleImage(ctx, item.img, imgWidth, imgHeight, p.scale, p.x, p.y, p.fit);
-        }
-
-        ctx.restore();
-    }
-
-    // Passmarken zeichnen
-    if (usePassmarks && marginPx > 0) {
-        ctx.strokeStyle = "#000000";
-        ctx.lineWidth = Math.max(1, Math.round(dpi / 300));
-        const markLength = Math.min(marginPx * 0.8, Math.round(dpi * 8 / 25.4)); 
-        
-        for (let i = 0; i <= strips; i++) {
-            ctx.beginPath();
-            if (orientation === "vertical") {
-                const x = marginPx + (imgWidth / strips) * i;
-                ctx.moveTo(x, marginPx - markLength);
-                ctx.lineTo(x, marginPx);
-                ctx.moveTo(x, marginPx + imgHeight);
-                ctx.lineTo(x, marginPx + imgHeight + markLength);
-            } else {
-                const y = marginPx + (imgHeight / strips) * i;
-                ctx.moveTo(marginPx - markLength, y);
-                ctx.lineTo(marginPx, y);
-                ctx.moveTo(marginPx + imgWidth, y);
-                ctx.lineTo(marginPx + imgWidth + markLength, y);
-            }
-            ctx.stroke();
-        }
-    }
-
-    document.getElementById("info").innerHTML = `<strong>Druckbild erfolgreich gerendert!</strong><br>Auflösung: ${imgWidth} × ${imgHeight} px<br>Streifenanzahl: ${strips}`;
-}
-
-function simulateView() {
-    const active = getActiveImages();
-    if (active.length < 2) return;
-
-    isSimulating = true;
-    const sliderVal = document.getElementById("viewSlider").value / 100;
-    
-    const dpi = parseInt(document.getElementById("dpi").value) || 300;
-    let marginMM = parseFloat(document.getElementById("marginMM").value) || 10;
-    const marginPx = mmToPx(marginMM, dpi);
-    
-    const canvas = document.getElementById("canvas");
-    const totalWidth = canvas.width;
-    const totalHeight = canvas.height;
-    
-    const imgWidth = totalWidth - (marginPx * 2);
-    const imgHeight = totalHeight - (marginPx * 2);
-
-    const ctx = canvas.getContext("2d");
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, totalWidth, totalHeight);
-
-    let idxA = 0, idxB = 1, weight = sliderVal;
-    if (active.length === 3) {
-        if (sliderVal < 0.5) {
-            idxA = 0; idxB = 1; weight = sliderVal * 2;
-        } else {
-            idxA = 1; idxB = 2; weight = (sliderVal - 0.5) * 2;
-        }
-    }
-
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(marginPx, marginPx, imgWidth, imgHeight);
-    ctx.clip();
-
-    // Bild A (ausblendend)
-    ctx.globalAlpha = 1 - weight;
-    ctx.save();
-    ctx.translate(marginPx, marginPx);
-    let pA = getParams(active[idxA].prefix);
-    drawSingleImage(ctx, active[idxA].img, imgWidth, imgHeight, pA.scale, pA.x, pA.y, pA.fit);
-    ctx.restore();
-
-    // Bild B (einblendend)
-    ctx.globalAlpha = weight;
-    ctx.save();
-    ctx.translate(marginPx, marginPx);
-    let pB = getParams(active[idxB].prefix);
-    drawSingleImage(ctx, active[idxB].img, imgWidth, imgHeight, pB.scale, pB.x, pB.y, pB.fit);
-    ctx.restore();
-
-    ctx.restore();
-    ctx.globalAlpha = 1.0; 
-    document.getElementById("info").innerHTML = "<em>Vorschau-Simulation aktiv</em>";
-}
-
-function downloadImage() {
-    resetToStrips();
-    const canvas = document.getElementById("canvas");
-    const type = document.getElementById("exportType").value;
-    const suffix = document.getElementById("usePassmarks").checked ? "_mit_marken" : "_pur";
-    const filename = "wechselbild" + suffix + (type === "image/png" ? ".png" : ".jpg");
-
-    canvas.toBlob(function(blob) {
-        if (!blob) {
-            alert("Fehler beim Erstellen der Datei.");
-            return;
-        }
-        
-        const blobUrl = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = blobUrl;
-        a.download = filename;
-        
-        document.body.appendChild(a);
-        a.click();
-        
-        setTimeout(() => {
-            document.body.removeChild(a);
-            URL.revokeObjectURL(blobUrl);
-        }, 150);
-    }, type, 0.95);
-}
-</script>
-
-</body>
-</html>
+    const L = active
