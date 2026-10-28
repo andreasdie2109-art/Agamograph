@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Wechselbild App Pro – Funktionierend</title>
+<title>Wechselbild App Pro – Stabilisiert</title>
 
 <style>
 body{
@@ -143,73 +143,73 @@ button{
         <!-- BILD A -->
         <div class="control-block control-block-A">
             <label style="font-weight:bold; font-size:14px;">Bild A</label>
-            <input type="file" id="imgA" accept="image/*" onchange="triggerUpdate()">
+            <input type="file" id="fileA" accept="image/*">
             
             <label>Anpassung an Zielgröße</label>
-            <select id="fitA" onchange="triggerUpdate()">
-                <option value="cover" selected>Ausfüllen (Cover - Proportional)</option>
-                <option value="contain">Vollständig anzeigen (Contain)</option>
-                <option value="stretch">Verzerren / Strecken (Stretch)</option>
+            <select id="fitA" onchange="requestRender()">
+                <option value="cover" selected>Ausfüllen (Cover)</option>
+                <option value="contain">Vollständig (Contain)</option>
+                <option value="stretch">Strecken (Stretch)</option>
             </select>
 
             <label>Zoom <span class="val-display" id="valScaleA">100%</span></label>
-            <input type="range" id="scaleA" min="10" max="300" value="100" oninput="updateValDisplay('valScaleA', this.value + '%'); triggerUpdate()">
+            <input type="range" id="scaleA" min="10" max="300" value="100" oninput="updateValDisplay('valScaleA', this.value + '%'); requestRender()">
 
             <label>Horizontaler Versatz (X) <span class="val-display" id="valXA">0%</span></label>
-            <input type="range" id="offsetXA" min="-100" max="100" value="0" oninput="updateValDisplay('valXA', this.value + '%'); triggerUpdate()">
+            <input type="range" id="offsetXA" min="-100" max="100" value="0" oninput="updateValDisplay('valXA', this.value + '%'); requestRender()">
             
             <label>Vertikaler Versatz (Y) <span class="val-display" id="valYA">0%</span></label>
-            <input type="range" id="offsetYA" min="-100" max="100" value="0" oninput="updateValDisplay('valYA', this.value + '%'); triggerUpdate()">
+            <input type="range" id="offsetYA" min="-100" max="100" value="0" oninput="updateValDisplay('valYA', this.value + '%'); requestRender()">
         </div>
 
         <!-- BILD B -->
         <div class="control-block control-block-B">
             <label style="font-weight:bold; font-size:14px;">Bild B</label>
-            <input type="file" id="imgB" accept="image/*" onchange="triggerUpdate()">
+            <input type="file" id="fileB" accept="image/*">
             
             <label>Anpassung an Zielgröße</label>
-            <select id="fitB" onchange="triggerUpdate()">
-                <option value="cover" selected>Ausfüllen (Cover - Proportional)</option>
-                <option value="contain">Vollständig anzeigen (Contain)</option>
-                <option value="stretch">Verzerren / Strecken (Stretch)</option>
+            <select id="fitB" onchange="requestRender()">
+                <option value="cover" selected>Ausfüllen (Cover)</option>
+                <option value="contain">Vollständig (Contain)</option>
+                <option value="stretch">Strecken (Stretch)</option>
             </select>
 
             <label>Zoom <span class="val-display" id="valScaleB">100%</span></label>
-            <input type="range" id="scaleB" min="10" max="300" value="100" oninput="updateValDisplay('valScaleB', this.value + '%'); triggerUpdate()">
+            <input type="range" id="scaleB" min="10" max="300" value="100" oninput="updateValDisplay('valScaleB', this.value + '%'); requestRender()">
 
             <label>Horizontaler Versatz (X) <span class="val-display" id="valXB">0%</span></label>
-            <input type="range" id="offsetXB" min="-100" max="100" value="0" oninput="updateValDisplay('valXB', this.value + '%'); triggerUpdate()">
+            <input type="range" id="offsetXB" min="-100" max="100" value="0" oninput="updateValDisplay('valXB', this.value + '%'); requestRender()">
             
             <label>Vertikaler Versatz (Y) <span class="val-display" id="valYB">0%</span></label>
-            <input type="range" id="offsetYB" min="-100" max="100" value="0" oninput="updateValDisplay('valYB', this.value + '%'); triggerUpdate()">
+            <input type="range" id="offsetYB" min="-100" max="100" value="0" oninput="updateValDisplay('valYB', this.value + '%'); requestRender()">
         </div>
 
         <!-- BILD C -->
         <div class="control-block control-block-C">
             <label style="font-weight:bold; font-size:14px;">Optional Bild C</label>
-            <input type="file" id="imgC" accept="image/*" onchange="triggerUpdate()">
+            <input type="file" id="fileC" accept="image/*">
             
             <label>Anpassung an Zielgröße</label>
-            <select id="fitC" onchange="triggerUpdate()">
-                <option value="cover" selected>Ausfüllen (Cover - Proportional)</option>
-                <option value="contain">Vollständig anzeigen (Contain)</option>
-                <option value="stretch">Verzerren / Strecken (Stretch)</option>
+            <select id="fitC" onchange="requestRender()">
+                <option value="cover" selected>Ausfüllen (Cover)</option>
+                <option value="contain">Vollständig (Contain)</option>
+                <option value="stretch">Strecken (Stretch)</option>
             </select>
 
             <label>Zoom <span class="val-display" id="valScaleC">100%</span></label>
-            <input type="range" id="scaleC" min="10" max="300" value="100" oninput="updateValDisplay('valScaleC', this.value + '%'); triggerUpdate()">
+            <input type="range" id="scaleC" min="10" max="300" value="100" oninput="updateValDisplay('valScaleC', this.value + '%'); requestRender()">
 
             <label>Horizontaler Versatz (X) <span class="val-display" id="valXC">0%</span></label>
-            <input type="range" id="offsetXC" min="-100" max="100" value="0" oninput="updateValDisplay('valXC', this.value + '%'); triggerUpdate()">
+            <input type="range" id="offsetXC" min="-100" max="100" value="0" oninput="updateValDisplay('valXC', this.value + '%'); requestRender()">
             
             <label>Vertikaler Versatz (Y) <span class="val-display" id="valYC">0%</span></label>
-            <input type="range" id="offsetYC" min="-100" max="100" value="0" oninput="updateValDisplay('valYC', this.value + '%'); triggerUpdate()">
+            <input type="range" id="offsetYC" min="-100" max="100" value="0" oninput="updateValDisplay('valYC', this.value + '%'); requestRender()">
         </div>
 
         <hr>
 
         <label>Ziel-Format</label>
-        <select id="preset" onchange="triggerUpdate()">
+        <select id="preset" onchange="requestRender()">
             <option value="custom">Benutzerdefiniert</option>
             <option value="21:9">21:9</option>
             <option value="16:9" selected>16:9</option>
@@ -219,13 +219,13 @@ button{
         </select>
 
         <label>Ziel-Breite (mm)</label>
-        <input type="number" id="widthMM" value="210" onchange="triggerUpdate()">
+        <input type="number" id="widthMM" value="210" onchange="requestRender()">
 
         <label>Ziel-Höhe (mm)</label>
-        <input type="number" id="heightMM" value="118" onchange="triggerUpdate()">
+        <input type="number" id="heightMM" value="118" onchange="requestRender()">
 
         <label>DPI</label>
-        <select id="dpi" onchange="triggerUpdate()">
+        <select id="dpi" onchange="requestRender()">
             <option>150</option>
             <option selected>300</option>
             <option>600</option>
@@ -234,28 +234,28 @@ button{
         <hr>
 
         <label>Breite Rand rundherum (mm)</label>
-        <input type="number" id="marginMM" value="10" min="0" onchange="triggerUpdate()">
+        <input type="number" id="marginMM" value="10" min="0" onchange="requestRender()">
 
         <label class="checkbox-label">
-            <input type="checkbox" id="usePassmarks" checked onchange="triggerUpdate()"> Passmarken aktivieren
+            <input type="checkbox" id="usePassmarks" checked onchange="requestRender()"> Passmarken aktivieren
         </label>
 
         <hr>
 
         <label>Modus</label>
-        <select id="mode" onchange="triggerUpdate()">
+        <select id="mode" onchange="requestRender()">
             <option value="count" selected>Anzahl Streifen</option>
             <option value="width">Streifenbreite (mm)</option>
         </select>
 
         <label>Anzahl Streifen</label>
-        <input type="number" id="stripCount" value="40" onchange="triggerUpdate()">
+        <input type="number" id="stripCount" value="40" onchange="requestRender()">
 
         <label>Streifenbreite (mm)</label>
-        <input type="number" id="stripWidthMM" value="2" step="0.1" onchange="triggerUpdate()">
+        <input type="number" id="stripWidthMM" value="2" step="0.1" onchange="requestRender()">
 
         <label>Ausrichtung</label>
-        <select id="orientation" onchange="triggerUpdate()">
+        <select id="orientation" onchange="requestRender()">
             <option value="vertical" selected>Vertikal</option>
             <option value="horizontal">Horizontal</option>
         </select>
@@ -274,11 +274,11 @@ button{
     <!-- VORSCHAU UND SIMULATOR -->
     <div class="preview-panel">
         <h2>Ausgabe & Simulation</h2>
-        <div id="info">Bitte Bilder auswählen.</div>
+        <div id="info">Bitte wähle Bild A und Bild B aus.</div>
         
         <div class="simulator-box">
             <strong>👀 Interaktiver Blickwinkel-Simulator</strong>
-            <p style="font-size: 13px; margin: 5px 0;">Bewege den Regler, um den Kipp-Effekt zu testen. Klicke auf den blauen Button, um das Streifenmuster wieder anzuzeigen.</p>
+            <p style="font-size: 13px; margin: 5px 0;">Bewege den Regler, um den Kipp-Effekt zu testen.</p>
             <input type="range" id="viewSlider" min="0" max="100" value="50" style="max-width:100%;" oninput="simulateView()">
             <button class="btn-secondary" onclick="resetToStrips()">Druck-Streifenmuster anzeigen</button>
         </div>
@@ -288,7 +288,8 @@ button{
 </div>
 
 <script>
-let loadedImages = { imgA: null, imgB: null, imgC: null };
+// Globale Speicherstrukturen für geladene Bilder
+let images = { A: null, B: null, C: null };
 let isSimulating = false;
 
 function updateValDisplay(id, text) {
@@ -299,22 +300,64 @@ function mmToPx(mm, dpi) {
     return Math.round(mm * dpi / 25.4);
 }
 
-function loadImage(file) {
-    return new Promise((resolve, reject) => {
+// Zentraler Event-Listener für Dateiuploads
+function setupFileInput(fileInputId, imgKey) {
+    document.getElementById(fileInputId).addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
         const reader = new FileReader();
         reader.onload = function(event) {
             const img = new Image();
-            img.onload = () => resolve(img);
-            img.onerror = () => reject(new Error("Bilddaten fehlerhaft."));
+            img.onload = function() {
+                images[imgKey] = img;
+                document.getElementById("info").innerHTML = `Bild ${imgKey} erfolgreich geladen (${img.width}×${img.height}px).`;
+                requestRender();
+            };
             img.src = event.target.result;
         };
-        reader.onerror = () => reject(new Error("Datei konnte nicht gelesen werden."));
         reader.readAsDataURL(file);
     });
 }
 
-function getDrawGeometry(img, targetW, targetH, zoomPercent, percentOffsetX, percentOffsetY, fitMode) {
-    const scale = (zoomPercent || 100) / 100;
+setupFileInput('fileA', 'A');
+setupFileInput('fileB', 'B');
+setupFileInput('fileC', 'C');
+
+function requestRender() {
+    isSimulating = false;
+    document.getElementById("viewSlider").value = 50;
+    generateStrips();
+}
+
+function resetToStrips() {
+    isSimulating = false;
+    document.getElementById("viewSlider").value = 50;
+    generateStrips();
+}
+
+function getActiveImages() {
+    let list = [];
+    if (images.A) list.push({ img: images.A, prefix: 'A' });
+    if (images.B) list.push({ img: images.B, prefix: 'B' });
+    if (images.C) list.push({ img: images.C, prefix: 'C' });
+    return list;
+}
+
+function calculateStripsCount(width, height, dpi) {
+    const mode = document.getElementById("mode").value;
+    if (mode === "count") {
+        return parseInt(document.getElementById("stripCount").value) || 40;
+    } else {
+        const swmm = parseFloat(document.getElementById("stripWidthMM").value) || 2;
+        const swpx = mmToPx(swmm, dpi);
+        const totalPx = (document.getElementById("orientation").value === "vertical") ? width : height;
+        return Math.max(2, Math.floor(totalPx / swpx));
+    }
+}
+
+function drawSingleImage(ctx, img, targetW, targetH, scalePct, offsetX, offsetY, fitMode) {
+    const scale = (scalePct || 100) / 100;
     let baseW = targetW;
     let baseH = targetH;
 
@@ -344,88 +387,32 @@ function getDrawGeometry(img, targetW, targetH, zoomPercent, percentOffsetX, per
     const drawW = baseW * scale;
     const drawH = baseH * scale;
 
-    let drawX = (targetW - drawW) / 2 + (targetW * (percentOffsetX / 100));
-    let drawY = (targetH - drawH) / 2 + (targetH * (percentOffsetY / 100));
+    let drawX = (targetW - drawW) / 2 + (targetW * (offsetX / 100));
+    let drawY = (targetH - drawH) / 2 + (targetH * (offsetY / 100));
 
-    return { drawX, drawY, drawW, drawH };
+    ctx.drawImage(img, drawX, drawY, drawW, drawH);
 }
 
-async function triggerUpdate() {
-    const inputA = document.getElementById("imgA").files[0];
-    const inputB = document.getElementById("imgB").files[0];
-    const inputC = document.getElementById("imgC").files[0];
+function getParams(prefix) {
+    return {
+        scale: parseFloat(document.getElementById("scale" + prefix).value) || 100,
+        x: parseFloat(document.getElementById("offsetX" + prefix).value) || 0,
+        y: parseFloat(document.getElementById("offsetY" + prefix).value) || 0,
+        fit: document.getElementById("fit" + prefix).value || "cover"
+    };
+}
 
-    try {
-        if (inputA && (!loadedImages.imgA || loadedImages.imgA._file !== inputA)) {
-            loadedImages.imgA = await loadImage(inputA);
-            loadedImages.imgA._file = inputA;
-        }
-        if (inputB && (!loadedImages.imgB || loadedImages.imgB._file !== inputB)) {
-            loadedImages.imgB = await loadImage(inputB);
-            loadedImages.imgB._file = inputB;
-        }
-        if (inputC && (!loadedImages.imgC || loadedImages.imgC._file !== inputC)) {
-            loadedImages.imgC = await loadImage(inputC);
-            loadedImages.imgC._file = inputC;
-        }
-    } catch(e) {
-        document.getElementById("info").innerHTML = "<span style='color:red;'>Fehler beim Laden: " + e.message + "</span>";
+function generateStrips() {
+    const active = getActiveImages();
+    if (active.length < 2) {
+        document.getElementById("info").innerHTML = "Bitte wähle mindestens Bild A und Bild B aus.";
         return;
     }
 
-    if (!isSimulating) {
-        generate();
-    } else {
-        simulateView();
-    }
-}
-
-function resetToStrips() {
-    isSimulating = false;
-    document.getElementById("viewSlider").value = 50;
-    generate();
-}
-
-function calculateStripsCount(width, height, dpi) {
-    const mode = document.getElementById("mode").value;
-    if (mode === "count") {
-        return parseInt(document.getElementById("stripCount").value) || 20;
-    } else {
-        const swmm = parseFloat(document.getElementById("stripWidthMM").value);
-        const swpx = mmToPx(swmm, dpi);
-        const totalPx = (document.getElementById("orientation").value === "vertical") ? width : height;
-        return Math.floor(totalPx / swpx) || 20;
-    }
-}
-
-function generate() {
-    const infoDiv = document.getElementById("info");
-    
-    const imgs = [];
-    const params = [];
-    
-    if (loadedImages.imgA) { 
-        imgs.push(loadedImages.imgA); 
-        params.push({img: loadedImages.imgA, x: parseFloat(offsetXA.value), y: parseFloat(offsetYA.value), scale: parseFloat(scaleA.value), fit: fitA.value}); 
-    }
-    if (loadedImages.imgB) { 
-        imgs.push(loadedImages.imgB); 
-        params.push({img: loadedImages.imgB, x: parseFloat(offsetXB.value), y: parseFloat(offsetYB.value), scale: parseFloat(scaleB.value), fit: fitB.value}); 
-    }
-    if (loadedImages.imgC) { 
-        imgs.push(loadedImages.imgC); 
-        params.push({img: loadedImages.imgC, x: parseFloat(offsetXC.value), y: parseFloat(offsetYC.value), scale: parseFloat(scaleC.value), fit: fitC.value}); 
-    }
-
-    if (imgs.length < 2) {
-        infoDiv.innerHTML = "Bitte wähle mindestens Bild A und Bild B aus.";
-        return;
-    }
-
-    const dpi = parseInt(document.getElementById("dpi").value);
-    let w = parseFloat(document.getElementById("widthMM").value);
-    let h = parseFloat(document.getElementById("heightMM").value);
-    let marginMM = parseFloat(document.getElementById("marginMM").value) || 0;
+    const dpi = parseInt(document.getElementById("dpi").value) || 300;
+    let w = parseFloat(document.getElementById("widthMM").value) || 210;
+    let h = parseFloat(document.getElementById("heightMM").value) || 118;
+    let marginMM = parseFloat(document.getElementById("marginMM").value) || 10;
     let usePassmarks = document.getElementById("usePassmarks").checked;
 
     const preset = document.getElementById("preset").value;
@@ -452,42 +439,33 @@ function generate() {
     ctx.fillRect(0, 0, totalWidth, totalHeight);
     
     const orientation = document.getElementById("orientation").value;
-    const L = imgs.length;
+    const L = active.length;
 
-    // Erstelle ein temporäres Canvas für jedes Bild, das mit den Skalierungs-, Zoom- und Versatz-Parametern gerendert wird
-    const preparedCanvases = params.map(p => {
-        const tmpC = document.createElement('canvas');
-        tmpC.width = imgWidth;
-        tmpC.height = imgHeight;
-        const tmpCtx = tmpC.getContext('2d');
-        tmpCtx.fillStyle = "#ffffff";
-        tmpCtx.fillRect(0, 0, imgWidth, imgHeight);
-        
-        const geo = getDrawGeometry(p.img, imgWidth, imgHeight, p.scale, p.x, p.y, p.fit);
-        tmpCtx.drawImage(p.img, geo.drawX, geo.drawY, geo.drawW, geo.drawH);
-        return tmpC;
-    });
-
-    // Streifenweises Zusammensetzen auf dem Haupt-Canvas
+    // Streifenweises Rendering direkt auf dem Canvas per Clipping
     for (let i = 0; i < strips; i++) {
-        const imgIndex = i % L;
-        const sourceCanvas = preparedCanvases[imgIndex];
+        const item = active[i % L];
+        const p = getParams(item.prefix);
+
+        ctx.save();
+        ctx.beginPath();
 
         if (orientation === "vertical") {
             const dw = imgWidth / strips;
-            const dx = marginPx + (i * dw);
-            const sw = imgWidth / strips;
-            const sx = (i / strips) * imgWidth;
+            ctx.rect(marginPx + (i * dw), marginPx, dw, imgHeight);
+            ctx.clip();
 
-            ctx.drawImage(sourceCanvas, sx, 0, sw, imgHeight, dx, marginPx, dw, imgHeight);
+            ctx.translate(marginPx, marginPx);
+            drawSingleImage(ctx, item.img, imgWidth, imgHeight, p.scale, p.x, p.y, p.fit);
         } else {
             const dh = imgHeight / strips;
-            const dy = marginPx + (i * dh);
-            const sh = imgHeight / strips;
-            const sy = (i / strips) * imgHeight;
+            ctx.rect(marginPx, marginPx + (i * dh), imgWidth, dh);
+            ctx.clip();
 
-            ctx.drawImage(sourceCanvas, 0, sy, imgWidth, sh, marginPx, dy, imgWidth, dh);
+            ctx.translate(marginPx, marginPx);
+            drawSingleImage(ctx, item.img, imgWidth, imgHeight, p.scale, p.x, p.y, p.fit);
         }
+
+        ctx.restore();
     }
 
     // Passmarken zeichnen
@@ -515,53 +493,37 @@ function generate() {
         }
     }
 
-    infoDiv.innerHTML = `<strong>Druckbild bereit!</strong><br>Bildgröße: ${imgWidth} × ${imgHeight} px<br>Gesamtgröße (inkl. Rand): ${totalWidth} × ${totalHeight} px<br>Streifen: ${strips}`;
+    document.getElementById("info").innerHTML = `<strong>Druckbild erfolgreich gerendert!</strong><br>Auflösung: ${imgWidth} × ${imgHeight} px<br>Streifenanzahl: ${strips}`;
 }
 
 function simulateView() {
-    const canvas = document.getElementById("canvas");
-    const ctx = canvas.getContext("2d");
-    const sliderVal = document.getElementById("viewSlider").value / 100;
-    
-    const imgs = [];
-    if (loadedImages.imgA) imgs.push(loadedImages.imgA);
-    if (loadedImages.imgB) imgs.push(loadedImages.imgB);
-    if (loadedImages.imgC) imgs.push(loadedImages.imgC);
-
-    if (imgs.length < 2) return;
+    const active = getActiveImages();
+    if (active.length < 2) return;
 
     isSimulating = true;
-
-    const dpi = parseInt(document.getElementById("dpi").value);
-    let marginMM = parseFloat(document.getElementById("marginMM").value) || 0;
+    const sliderVal = document.getElementById("viewSlider").value / 100;
+    
+    const dpi = parseInt(document.getElementById("dpi").value) || 300;
+    let marginMM = parseFloat(document.getElementById("marginMM").value) || 10;
     const marginPx = mmToPx(marginMM, dpi);
     
+    const canvas = document.getElementById("canvas");
     const totalWidth = canvas.width;
     const totalHeight = canvas.height;
     
     const imgWidth = totalWidth - (marginPx * 2);
     const imgHeight = totalHeight - (marginPx * 2);
 
+    const ctx = canvas.getContext("2d");
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, totalWidth, totalHeight);
 
-    let imgIndexA = 0;
-    let imgIndexB = 1;
-    let weight = 0;
-
-    if (imgs.length === 2) {
-        imgIndexA = 0;
-        imgIndexB = 1;
-        weight = sliderVal;
-    } else if (imgs.length === 3) {
+    let idxA = 0, idxB = 1, weight = sliderVal;
+    if (active.length === 3) {
         if (sliderVal < 0.5) {
-            imgIndexA = 0;
-            imgIndexB = 1;
-            weight = sliderVal * 2;
+            idxA = 0; idxB = 1; weight = sliderVal * 2;
         } else {
-            imgIndexA = 1;
-            imgIndexB = 2;
-            weight = (sliderVal - 0.5) * 2;
+            idxA = 1; idxB = 2; weight = (sliderVal - 0.5) * 2;
         }
     }
 
@@ -570,13 +532,21 @@ function simulateView() {
     ctx.rect(marginPx, marginPx, imgWidth, imgHeight);
     ctx.clip();
 
+    // Bild A (ausblendend)
     ctx.globalAlpha = 1 - weight;
-    const geoA = getDrawGeometry(imgs[imgIndexA], imgWidth, imgHeight, parseFloat(scaleA.value), parseFloat(offsetXA.value), parseFloat(offsetYA.value), fitA.value);
-    ctx.drawImage(imgs[imgIndexA], marginPx + geoA.drawX, marginPx + geoA.drawY, geoA.drawW, geoA.drawH);
+    ctx.save();
+    ctx.translate(marginPx, marginPx);
+    let pA = getParams(active[idxA].prefix);
+    drawSingleImage(ctx, active[idxA].img, imgWidth, imgHeight, pA.scale, pA.x, pA.y, pA.fit);
+    ctx.restore();
 
+    // Bild B (einblendend)
     ctx.globalAlpha = weight;
-    const geoB = getDrawGeometry(imgs[imgIndexB], imgWidth, imgHeight, parseFloat(scaleB.value), parseFloat(offsetXB.value), parseFloat(offsetYB.value), fitB.value);
-    ctx.drawImage(imgs[imgIndexB], marginPx + geoB.drawX, marginPx + geoB.drawY, geoB.drawW, geoB.drawH);
+    ctx.save();
+    ctx.translate(marginPx, marginPx);
+    let pB = getParams(active[idxB].prefix);
+    drawSingleImage(ctx, active[idxB].img, imgWidth, imgHeight, pB.scale, pB.x, pB.y, pB.fit);
+    ctx.restore();
 
     ctx.restore();
     ctx.globalAlpha = 1.0; 
