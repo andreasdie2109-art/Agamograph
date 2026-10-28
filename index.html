@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Wechselbild App Pro – Korrektes Alternieren</title>
+<title>Wechselbild App Pro – Korrigiertes Raster</title>
 
 <style>
 body{
@@ -134,7 +134,7 @@ button{
 
 <body>
 
-<h1>Wechselbild App Pro (Präzisions-Raster)</h1>
+<h1>Wechselbild App Pro</h1>
 
 <div class="container">
     <!-- EINSTELLUNGEN -->
@@ -345,4 +345,122 @@ function getDrawGeometry(img, targetW, targetH, zoomPercent, percentOffsetX, per
     const drawH = baseH * scale;
 
     let drawX = (targetW - drawW) / 2 + (targetW * (percentOffsetX / 100));
-    let drawY = (targetH - drawH) / 2 + (
+    let drawY = (targetH - drawH) / 2 + (targetH * (percentOffsetY / 100));
+
+    return { drawX, drawY, drawW, drawH };
+}
+
+async function triggerUpdate() {
+    const inputA = document.getElementById("imgA").files[0];
+    const inputB = document.getElementById("imgB").files[0];
+    const inputC = document.getElementById("imgC").files[0];
+
+    try {
+        if (inputA && (!loadedImages.imgA || loadedImages.imgA._file !== inputA)) {
+            loadedImages.imgA = await loadImage(inputA);
+            loadedImages.imgA._file = inputA;
+        }
+        if (inputB && (!loadedImages.imgB || loadedImages.imgB._file !== inputB)) {
+            loadedImages.imgB = await loadImage(inputB);
+            loadedImages.imgB._file = inputB;
+        }
+        if (inputC && (!loadedImages.imgC || loadedImages.imgC._file !== inputC)) {
+            loadedImages.imgC = await loadImage(inputC);
+            loadedImages.imgC._file = inputC;
+        }
+    } catch(e) {
+        document.getElementById("info").innerHTML = "<span style='color:red;'>Fehler beim Laden: " + e.message + "</span>";
+        return;
+    }
+
+    if (!isSimulating) {
+        generate();
+    } else {
+        simulateView();
+    }
+}
+
+function resetToStrips() {
+    isSimulating = false;
+    document.getElementById("viewSlider").value = 50;
+    generate();
+}
+
+function calculateStripsCount(width, height, dpi) {
+    const mode = document.getElementById("mode").value;
+    if (mode === "count") {
+        return parseInt(document.getElementById("stripCount").value) || 20;
+    } else {
+        const swmm = parseFloat(document.getElementById("stripWidthMM").value);
+        const swpx = mmToPx(swmm, dpi);
+        const totalPx = (document.getElementById("orientation").value === "vertical") ? width : height;
+        return Math.floor(totalPx / swpx) || 20;
+    }
+}
+
+function generate() {
+    const infoDiv = document.getElementById("info");
+    
+    const imgs = [];
+    const params = [];
+    
+    if (loadedImages.imgA) { 
+        imgs.push(loadedImages.imgA); 
+        params.push({x: parseFloat(offsetXA.value), y: parseFloat(offsetYA.value), scale: parseFloat(scaleA.value), fit: fitA.value}); 
+    }
+    if (loadedImages.imgB) { 
+        imgs.push(loadedImages.imgB); 
+        params.push({x: parseFloat(offsetXB.value), y: parseFloat(offsetYB.value), scale: parseFloat(scaleB.value), fit: fitB.value}); 
+    }
+    if (loadedImages.imgC) { 
+        imgs.push(loadedImages.imgC); 
+        params.push({x: parseFloat(offsetXC.value), y: parseFloat(offsetYC.value), scale: parseFloat(scaleC.value), fit: fitC.value}); 
+    }
+
+    if (imgs.length < 2) {
+        infoDiv.innerHTML = "Bitte wähle mindestens Bild A und Bild B aus.";
+        return;
+    }
+
+    const dpi = parseInt(document.getElementById("dpi").value);
+    let w = parseFloat(document.getElementById("widthMM").value);
+    let h = parseFloat(document.getElementById("heightMM").value);
+    let marginMM = parseFloat(document.getElementById("marginMM").value) || 0;
+    let usePassmarks = document.getElementById("usePassmarks").checked;
+
+    const preset = document.getElementById("preset").value;
+    if (preset !== "custom") {
+        const r = preset.split(":");
+        h = w * parseFloat(r[1]) / parseFloat(r[0]);
+        document.getElementById("heightMM").value = h.toFixed(1);
+    }
+
+    const imgWidth = mmToPx(w, dpi);
+    const imgHeight = mmToPx(h, dpi);
+    const strips = calculateStripsCount(imgWidth, imgHeight, dpi);
+    
+    const marginPx = mmToPx(marginMM, dpi);
+    const totalWidth = imgWidth + (marginPx * 2);
+    const totalHeight = imgHeight + (marginPx * 2);
+
+    const canvas = document.getElementById("canvas");
+    canvas.width = totalWidth;
+    canvas.height = totalHeight;
+
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, totalWidth, totalHeight);
+    
+    const orientation = document.getElementById("orientation").value;
+    const L = imgs.length;
+
+    // Erstelle ein Offscreen-Canvas für jedes Bild, um es sauber auf die Zielgröße vorzubereiten
+    const offscreenCanvases = imgs.map((img, idx) => {
+        const c = document.createElement('canvas');
+        c.width = imgWidth;
+        c.height = imgHeight;
+        const cCtx = c.getContext('2d');
+        cCtx.fillStyle = "#ffffff";
+        cCtx.fillRect(0, 0, imgWidth, imgHeight);
+        
+        
