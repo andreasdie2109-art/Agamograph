@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Wechselbild App Pro – Druckmuster & Simulation getrennt</title>
+<title>Wechselbild App Pro – Mit Falt-Zwischenstegen</title>
 
 <style>
 body{
@@ -236,6 +236,9 @@ button{
         <label>Breite Rand rundherum (mm)</label>
         <input type="number" id="marginMM" value="10" min="0" onchange="requestRender()">
 
+        <label>Falt-Steg / Zwischenraum (mm)</label>
+        <input type="number" id="gapMM" value="0" min="0" step="0.1" onchange="requestRender()" title="Fügt einen weißen Puffer-Zwischenraum für exaktes Falten ein">
+
         <label class="checkbox-label">
             <input type="checkbox" id="usePassmarks" checked onchange="requestRender()"> Passmarken aktivieren
         </label>
@@ -391,7 +394,7 @@ function getParams(prefix) {
     };
 }
 
-// 1. ECHTES DRUCKSTREIFENMUSTER (Alternierendes Slicing)
+// 1. ECHTES DRUCKSTREIFENMUSTER (Inkl. optionaler Falt-Zwischenstege)
 function generateStrips() {
     const active = getActiveImages();
     if (active.length < 2) {
@@ -403,6 +406,7 @@ function generateStrips() {
     let w = parseFloat(document.getElementById("widthMM").value) || 210;
     let h = parseFloat(document.getElementById("heightMM").value) || 118;
     let marginMM = parseFloat(document.getElementById("marginMM").value) || 10;
+    let gapMM = parseFloat(document.getElementById("gapMM").value) || 0;
     let usePassmarks = document.getElementById("usePassmarks").checked;
 
     const preset = document.getElementById("preset").value;
@@ -417,6 +421,9 @@ function generateStrips() {
     const strips = calculateStripsCount(imgWidth, imgHeight, dpi);
     
     const marginPx = mmToPx(marginMM, dpi);
+    const gapPx = mmToPx(gapMM, dpi);
+
+    // Gesamte Dimensionen anpassen, wenn Stege dazukommen
     const totalWidth = imgWidth + (marginPx * 2);
     const totalHeight = imgHeight + (marginPx * 2);
 
@@ -444,146 +451,10 @@ function generateStrips() {
         return buf;
     });
 
-    for (let i = 0; i < strips; i++) {
-        const imgIndex = i % L;
-        const sourceBuffer = preparedBuffers[imgIndex];
+    // Berechne die effektive Streifenbreite unter Berücksichtigung von Zwischenstegen
+    const totalSpace = (orientation === "vertical") ? imgWidth : imgHeight;
+    const totalGapsPx = gapPx * (strips - 1);
+    const availableSpaceForStrips = Math.max(10, totalSpace - totalGapsPx);
+    const stripSize = availableSpaceForStrips / strips;
 
-        let totalSlicesForThisImg = 0;
-        let sliceIndexForThisImg = 0;
-        for (let k = 0; k < strips; k++) {
-            if (k % L === imgIndex) {
-                if (k === i) sliceIndexForThisImg = totalSlicesForThisImg;
-                totalSlicesForThisImg++;
-            }
-        }
-
-        if (orientation === "vertical") {
-            const dw = imgWidth / strips;
-            const dx = marginPx + (i * dw);
-            const sw = imgWidth / totalSlicesForThisImg;
-            const sx = sliceIndexForThisImg * sw;
-
-            ctx.drawImage(sourceBuffer, sx, 0, sw, imgHeight, dx, marginPx, dw, imgHeight);
-        } else {
-            const dh = imgHeight / strips;
-            const dy = marginPx + (i * dh);
-            const sh = imgHeight / totalSlicesForThisImg;
-            const sy = sliceIndexForThisImg * sh;
-
-            ctx.drawImage(sourceBuffer, 0, sy, imgWidth, sh, marginPx, dy, imgWidth, dh);
-        }
-    }
-
-    if (usePassmarks && marginPx > 0) {
-        ctx.strokeStyle = "#000000";
-        ctx.lineWidth = Math.max(1, Math.round(dpi / 300));
-        const markLength = Math.min(marginPx * 0.8, Math.round(dpi * 8 / 25.4)); 
-        
-        for (let i = 0; i <= strips; i++) {
-            ctx.beginPath();
-            if (orientation === "vertical") {
-                const x = marginPx + (imgWidth / strips) * i;
-                ctx.moveTo(x, marginPx - markLength);
-                ctx.lineTo(x, marginPx);
-                ctx.moveTo(x, marginPx + imgHeight);
-                ctx.lineTo(x, marginPx + imgHeight + markLength);
-            } else {
-                const y = marginPx + (imgHeight / strips) * i;
-                ctx.moveTo(marginPx - markLength, y);
-                ctx.lineTo(marginPx, y);
-                ctx.moveTo(marginPx + imgWidth, y);
-                ctx.lineTo(marginPx + imgWidth + markLength, y);
-            }
-            ctx.stroke();
-        }
-    }
-
-    document.getElementById("info").innerHTML = `<strong>Druckbild (Streifenmuster) bereit!</strong><br>Streifen: ${strips} (Alternierend A/B/C)`;
-}
-
-// 2. BLICKWINKEL-SIMULATOR (Aktiviert sich NUR beim Verschieben des Reglers)
-function simulateView() {
-    const active = getActiveImages();
-    if (active.length < 2) return;
-
-    const sliderVal = document.getElementById("viewSlider").value / 100;
-    
-    const dpi = parseInt(document.getElementById("dpi").value) || 300;
-    let marginMM = parseFloat(document.getElementById("marginMM").value) || 10;
-    const marginPx = mmToPx(marginMM, dpi);
-    
-    const canvas = document.getElementById("canvas");
-    const totalWidth = canvas.width;
-    const totalHeight = canvas.height;
-    
-    const imgWidth = totalWidth - (marginPx * 2);
-    const imgHeight = totalHeight - (marginPx * 2);
-
-    const ctx = canvas.getContext("2d");
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, totalWidth, totalHeight);
-
-    let idxA = 0, idxB = 1, weight = sliderVal;
-    if (active.length === 3) {
-        if (sliderVal < 0.5) {
-            idxA = 0; idxB = 1; weight = sliderVal * 2;
-        } else {
-            idxA = 1; idxB = 2; weight = (sliderVal - 0.5) * 2;
-        }
-    }
-
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(marginPx, marginPx, imgWidth, imgHeight);
-    ctx.clip();
-
-    ctx.globalAlpha = 1 - weight;
-    ctx.save();
-    ctx.translate(marginPx, marginPx);
-    let pA = getParams(active[idxA].prefix);
-    renderImageToContext(ctx, active[idxA].img, imgWidth, imgHeight, pA.scale, pA.x, pA.y, pA.fit);
-    ctx.restore();
-
-    ctx.globalAlpha = weight;
-    ctx.save();
-    ctx.translate(marginPx, marginPx);
-    let pB = getParams(active[idxB].prefix);
-    renderImageToContext(ctx, active[idxB].img, imgWidth, imgHeight, pB.scale, pB.x, pB.y, pB.fit);
-    ctx.restore();
-
-    ctx.restore();
-    ctx.globalAlpha = 1.0; 
-    document.getElementById("info").innerHTML = "<em>Vorschau-Simulation aktiv</em>";
-}
-
-function downloadImage() {
-    resetToStrips();
-    const canvas = document.getElementById("canvas");
-    const type = document.getElementById("exportType").value;
-    const suffix = document.getElementById("usePassmarks").checked ? "_mit_marken" : "_pur";
-    const filename = "wechselbild" + suffix + (type === "image/png" ? ".png" : ".jpg");
-
-    canvas.toBlob(function(blob) {
-        if (!blob) {
-            alert("Fehler beim Erstellen der Datei.");
-            return;
-        }
-        
-        const blobUrl = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = blobUrl;
-        a.download = filename;
-        
-        document.body.appendChild(a);
-        a.click();
-        
-        setTimeout(() => {
-            document.body.removeChild(a);
-            URL.revokeObjectURL(blobUrl);
-        }, 150);
-    }, type, 0.95);
-}
-</script>
-
-</body>
-</html>
+    for (let i = 0; i < strips; i
